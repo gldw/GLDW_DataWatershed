@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<nodedefs>
+<nodedef name="USGSWaterWatchService" class="vdab.extnodes.usgs.USGSWaterWatchService">
+	<attr name="Group">Data</attr>
+	<attr name="ConsumedEventTypes">Trigger,Event</attr>
+    <attr name="PublishedEventTypes">Event</attr>
+    <attr name="NodeOverview">Retrieves USGS WaterWatch data for given region.</attr>   
+    <attr name="NodeDescTemplate"> region=${RegionCode}(HU${HUCodeMatch})</attr>
+	<attr name="NodeQuality" >Beta</attr>  
+	<datadef name="RegionCode">
+		<attr name="EditOrder" type="Integer">21</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The region code which is a two letter state abbreviation.</attr>		
+	</datadef>
+	<datadef name="HUCodeMatch">
+		<attr name="EditOrder" type="Integer">22</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="Desc">Hydrologic Unit Code prefix for data of interest.</attr>		
+	</datadef>
+	<datadef name="SelectedFields">
+		<attr name="EditOrder" type="Integer">23</attr>
+		<attr name="Category">Required</attr>
+		<attr name="RefreshOnChange" type="Boolean">true</attr>		
+		<attr name="Desc">Select the fields that should be reported.</attr>		
+	</datadef>
+</nodedef>
+</nodedefs>
