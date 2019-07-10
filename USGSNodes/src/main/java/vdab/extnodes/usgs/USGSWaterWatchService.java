@@ -38,8 +38,6 @@ public class USGSWaterWatchService  extends HTTPService_A{
 	private ControlDataBuffer c_cdb_AvailableEnhancedFields= new ControlDataBuffer("AvailableEnhancedFields");
 	private ControlDataBuffer c_cdb_AvailableFields = c_cdb_AvailableOriginalFields;
 	private ControlDataBuffer c_cdb_SelectedFields = new ControlDataBuffer("USGSSelectedFields",new String[]{"stage","flow","percentile"});
-	
-	// PARSING CONSTANTS
 	private static String SITES_START= "{\"sites\":[";
 	private static String SITENO_START= "{\"site_no\":";
 	private static String HUC_CODE_START= ",\"huc_cd\":\"";
@@ -100,6 +98,7 @@ public class USGSWaterWatchService  extends HTTPService_A{
 		theDataDef.setAllPickValues(l.toArray(new String[l.size()]));
 		return theDataDef;
 	}
+	
 	public String buildCompleteURL(AnalysisEvent ev) {
 		if (c_RegionCode == null)
 			return null;	
@@ -129,6 +128,12 @@ public class USGSWaterWatchService  extends HTTPService_A{
 
 	}
 	private HashMap<String,String> c_LastRecord_map = new HashMap<String, String>();
+	private String getDataPath(String siteno){
+		StringBuilder sb = new StringBuilder();
+		sb.append(c_RegionCode.toUpperCase());
+		sb.append(siteno);
+		return sb.toString();
+	}
 	private boolean hasChanged(String record){
 		String site = StringUtility.digitsOnly(record.substring(0,16));
 		String last = c_LastRecord_map.get(site);
@@ -138,68 +143,108 @@ public class USGSWaterWatchService  extends HTTPService_A{
 		}
 		return false;
 	}
-	private AnalysisEvent convertOneEvent(String json) {
+	private AnalysisEvent convertOneEvent(String huc, String json) {
 		
 		StringBuilder sb = new StringBuilder();
 		sb.append(SITENO_START);
 		sb.append(json);
 		sb.append("}");
+		try{
 		String fixedJson = sb.toString();
-		fixedJson = fixedJson.replace("class", "hclass");
+		fixedJson = fixedJson.replace("class", "XXXclassXXX"); // Replace "class" with token, JSON java library doesn't like it
 		fixedJson = fixedJson.replace("null", "\"\"");
 
-		try{
+	
 			AnalysisData ad = JsonUtility.convertJsonToAnalysisData("SiteUSGS", fixedJson);
 			String siteno = ad.getElementByLabel("site_no").getDataAsString();	
-			String timeStr = ad.getElementByLabel("flow_dt").getDataAsString();
+			String flowTimeStr = ad.getElementByLabel("flow_dt").getDataAsString();
+			String stageTimeStr = ad.getElementByLabel("stage_dt").getDataAsString();
 			String timeZone = ad.getElementByLabel("tz_cd").getDataAsString();
-			
+		
 			Double latitude = ad.getElementByLabel("dec_lat_va").getDataAsDouble();
 			Double longitude = ad.getElementByLabel("dec_long_va").getDataAsDouble();
-
+	
+			boolean foundStageUnit = (ad.getElementByLabel("stage_unit").getDataAsString().length() > 0	);
+			boolean foundFlowUnit = (ad.getElementByLabel("flow_unit").getDataAsString().length() > 0);	
 
 			AnalysisCompoundData acd = new AnalysisCompoundData("USGSData");
 			AnalysisData[] ads = ad.getAllSimpleSubData();
-			for (AnalysisData adSub: ads){
-				if (c_cdb_SelectedFields.isSet(adSub.getLabel()))
-						acd.addAnalysisData(adSub);
-			}
 			
+			for (AnalysisData adSub: ads){
+				if (adSub.getLabel().equals("XXXclassXXX")) // replace token "class"
+					adSub.setLabel("class");
+				String label = adSub.getLabel();		
+				if (c_cdb_SelectedFields.isSet(label)){
+					if (label.equals("station_nm")){ // remove commas in station name.
+						adSub.setData(adSub.getDataAsString().replace(","," "));
+					}
+					/*
+					if (label.equals("flow") && !foundFlowUnit) // Don't get flow if not defined
+						continue;
+					if (label.equals("stage") && !foundStageUnit)  // Don't get stage if not defined
+						continue;
+					*/
+					acd.addAnalysisData(adSub);
+				}
+			}
+
 			// Get Date for event - set timzone if needed.
 			if (!c_WWLastTZ.equals(timeZone)){
 				c_WWDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
 				c_WWLastTZ = timeZone;
-			}			
-			Date evDate = c_WWDateFormat.parse(timeStr);
+			}
+			
+			// Use the latest of the available times
+			long ts = 0L;
+			long flowTime = c_WWDateFormat.parse(flowTimeStr).getTime();
+			long stageTime = c_WWDateFormat.parse(stageTimeStr).getTime();
+			if (flowTime == stageTime){
+				ts = flowTime;
+			}
+			else {
+				ts = (flowTime > stageTime)? flowTime: stageTime;
+//				setWarning(">>>> THE times are not the same STAGE="+stageTimeStr+" FLOW="+flowTimeStr+" SITE="+siteno);
+			}
 
-			AnalysisEvent ev = new AnalysisEvent(evDate.getTime(),"USGS"+siteno,acd);
+			AnalysisEvent ev = new AnalysisEvent(ts,getDataPath(siteno),acd);
 			ev.setLocation(GeoUnits.DEGREES_NE_METERS, latitude, longitude, null);
 			return ev;
 		}
 		catch(Exception e){
-			String ex = e.toString();
+			setWarning("Unable to convert record with HUC="+huc+" e>"+e);
 		}
 		return null;
 	}
 	private AnalysisEvent[] convertSelectedToEvents(String json){
 		ArrayList<AnalysisEvent> l = new ArrayList<AnalysisEvent>();	
 		ArrayList<String> locJsonList = StringUtility.locateAllBetween(json, SITENO_START ,"}");
-		setWarning("Received records from USGS NORECORDS="+locJsonList.size());
+
 		int failedCount = 0;
 		for(String locJson: locJsonList){
 			if (!hasChanged(locJson))
 				continue;
 			String huc = StringUtility.locateBetween(locJson, HUC_CODE_START ,"\",");
-			if ( c_HUCodeMatch == null || c_HUCodeMatch.length() == 0 || huc.startsWith(c_HUCodeMatch)) {
-				AnalysisEvent ev = convertOneEvent(locJson);
+			if (huc == null){
+				if (isTraceLogging())
+					logTrace("HU Code not found for WaterWatch RECORD="+locJson);
+				failedCount++;	
+				continue;
+			}
+			if ( c_HUCodeMatch == null || c_HUCodeMatch.length() == 0  || huc.startsWith(c_HUCodeMatch)) {
+				AnalysisEvent ev = convertOneEvent(huc, locJson);
 				if (ev != null)
 					l.add(ev);
 				else
 					failedCount++;
 			}
 		}
-		if (failedCount > 0)
-			setWarning("Some records were not parsable NOFAILED="+failedCount);
+		if (failedCount > 0){
+			setWarning("Some records were not parsable NOFAILED="+failedCount+" NORECORDS="+locJsonList.size());
+		}
+		else {
+			if (isTraceLogging())
+				logTrace("Received records from USGS NORECORDS="+locJsonList.size());	
+		}
 		return l.toArray(new AnalysisEvent[l.size()]);
 	}
 }
