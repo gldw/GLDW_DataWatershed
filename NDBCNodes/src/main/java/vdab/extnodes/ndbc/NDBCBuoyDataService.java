@@ -25,9 +25,9 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	private static String API_ENDPOINT= "https://www.ndbc.noaa.gov/data/realtime2/";
 	private static String PATH_PREFIX = "NDBC_";
 	private static long MIN_TIMECHANGE = 100L;
-	private static Double[] c_LastValues = new Double[19];
-	private static long[] c_LastValueTime = new long[19];
 	private static SimpleDateFormat SDF_NDBC = new SimpleDateFormat("yyyyMMddHHmm");
+	private Double[] c_LastValues = new Double[19];
+	private long[] c_LastValueTime = new long[19];
 	private String c_BuoyID;
 	private long c_LastEventTimestamp = 0L;
 	public Integer get_IconCode(){
