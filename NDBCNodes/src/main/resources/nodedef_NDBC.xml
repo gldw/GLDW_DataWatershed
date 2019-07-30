@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<nodedefs>
+<nodedef name="NDBCBuoyDataService" class="vdab.extnodes.ndbc.NDBCBuoyDataService">
+	<attr name="Group">Data</attr>
+	<attr name="ConsumedEventTypes">Trigger,Event</attr>
+    <attr name="PublishedEventTypes">Event</attr>
+    <attr name="NodeOverview">Retrieves parsed buoy data from a single NDBC Buoy</attr>   
+    <attr name="NodeDescTemplate">from Buoy ${BuoyID}</attr>
+	<attr name="NodeQuality" >Beta</attr>  
+	<datadef name="BuoyID">
+		<attr name="EditOrder" type="Integer">21</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The identifying code assigned to the buoy.</attr>		
+	</datadef>
+	<datadef name="GeoLatitude">
+		<attr name="EditOrder" type="Integer">22</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The latitude of the buoy</attr>		
+	</datadef>
+	<datadef name="GeoLongitude">
+		<attr name="EditOrder" type="Integer">23</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The longitude of the buoy.</attr>		
+	</datadef>
+</nodedef>
+</nodedefs>
