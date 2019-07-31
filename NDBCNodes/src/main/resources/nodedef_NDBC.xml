@@ -22,5 +22,22 @@
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The longitude of the buoy.</attr>		
 	</datadef>
+	<datadef name="GeoAltitude">
+		<attr name="EditOrder" type="Integer">24</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="Desc">The altitude of the buoy.</attr>		
+	</datadef>
+	<datadef name="FillMissingData">
+		<attr name="EditOrder" type="Integer">25</attr>
+		<attr name="RefreshOnChange" type="Boolean">true</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="Desc">Use previously received data for metrics not currently reported. Set the MaxFillAge to identify how old the filled data can be.</attr>		
+	</datadef>
+	<datadef name="MaxFillAge">
+		<attr name="EditOrder" type="Integer">26</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="MaxChars" type="Integer">3</attr>
+		<attr name="Desc">The maximum age in minutes for old data metrics that will be used to fill missing data in the current report.</attr>		
+	</datadef>
 </nodedef>
 </nodedefs>

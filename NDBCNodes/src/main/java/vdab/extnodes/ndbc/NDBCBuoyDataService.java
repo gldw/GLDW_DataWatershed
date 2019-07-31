@@ -11,8 +11,10 @@ import java.util.StringTokenizer;
 import java.util.TimeZone;
 
 import com.lcrc.af.AnalysisCompoundData;
+import com.lcrc.af.AnalysisDataDef;
 import com.lcrc.af.AnalysisEvent;
 
+import com.lcrc.af.util.ControlDataBuffer;
 import com.lcrc.af.util.IconUtility;
 
 import vdab.api.node.HTTPService_A;
@@ -25,11 +27,15 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	private static String API_ENDPOINT= "https://www.ndbc.noaa.gov/data/realtime2/";
 	private static String PATH_PREFIX = "NDBC_";
 	private static long MIN_TIMECHANGE = 100L;
-	private static SimpleDateFormat SDF_NDBC = new SimpleDateFormat("yyyyMMddHHmm");
+	
+	private SimpleDateFormat c_SDF_NDBC = new SimpleDateFormat("yyyyMMddHHmm");
 	private Double[] c_LastValues = new Double[19];
 	private long[] c_LastValueTime = new long[19];
 	private String c_BuoyID;
+	private Boolean c_FillMissingData = Boolean.FALSE;
+	private Long c_MaxFillAge = Long.valueOf(60L);
 	private long c_LastEventTimestamp = 0L;
+	private ControlDataBuffer c_cdb_ProcessedTimes = new ControlDataBuffer("NDBCProcessedTimes");
 	public Integer get_IconCode(){
 		return  IconUtility.getIconHashCode("node_noaa");
 	}
@@ -39,17 +45,31 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	public void set_BuoyID(String code){
 		c_BuoyID = code;
 	}
-	public String get_LatestReceived(){
-		if (c_LastEventTimestamp > 0L){
-			return new Date(c_LastEventTimestamp).toString();	
-			
-		}
-		return null;
+	public Boolean get_FillMissingData() {
+		return c_FillMissingData;
+	}
+	public void set_FillMissingData(Boolean fill){
+		c_FillMissingData = fill;
+	}
+	public Long get_MaxFillAge() {
+		return c_MaxFillAge;
+	}
+	public void set_MaxFillAge(Long age){
+		c_MaxFillAge = age;
+	}
+	public AnalysisDataDef def_MaxFillAge(AnalysisDataDef theDataDef){
+	       if (!c_FillMissingData.booleanValue())
+	    	   theDataDef.disable();
+	       return theDataDef;
+	}
+
+	public String get_NDBCProcessedTimes(){
+		return c_cdb_ProcessedTimes.getAllSet(",");
 	}
 	public void _init(){
-		
+		c_SDF_NDBC.setTimeZone(TimeZone.getTimeZone("GMT"));	
 		super._init();
-		SDF_NDBC.setTimeZone(TimeZone.getTimeZone("GMT"));
+	
 	}
 	public String buildCompleteURL(AnalysisEvent ev) {
 		StringBuilder sb = new StringBuilder();
@@ -100,21 +120,28 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 				dataList.add(token);
 			}
 			String[] dataParts = dataList.toArray(new String[dataList.size()]);
-			long ts = getEventTS(dataParts);
-			if (isTraceLogging())
-				logTrace("Received data from BUOY="+c_BuoyID+" DATE="+new Date(ts).toString());
+			// Build date into one String
+			StringBuilder sb = new StringBuilder();
+			for (int n=0; n < 5; n++)
+				sb.append(dataParts[n]);
+			String dateStr = sb.toString();
 
-			long timeNow = System.currentTimeMillis();
-			if (ts > timeNow) {
-				setError("Time calculation ERROR, time is in the future DIFF="+(ts-timeNow)+" data dropped");
+			long ts = getEventTS(dateStr);
+			if (ts == 0L){
 				serviceFailed(inEvent, 6);
 				return;
 			}
+			
+			if (isTraceLogging())
+				logTrace("Received data from BUOY="+c_BuoyID+" DATE="+new Date(ts).toString());
+
 			if (ts > c_LastEventTimestamp) { // This is a new value.
 				c_LastEventTimestamp = ts+MIN_TIMECHANGE;
 				AnalysisCompoundData acd = new AnalysisCompoundData(DATA_LABEL);
 				getAllData(ts, acd, dataParts);
 				AnalysisEvent ev = new AnalysisEvent(ts, this, acd);
+				c_cdb_ProcessedTimes.set(dateStr.substring(6));
+				c_cdb_ProcessedTimes.trimTo(8);
 				serviceResponse(inEvent, ev);
 			}
 			else { // HACKALERT - Same value just complete.
@@ -130,20 +157,23 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	public String getDataPath(){ // Overrides data path;
 		return PATH_PREFIX+c_BuoyID;
 	}
-	private long getEventTS(String[] dataParts){
+	private long getEventTS(String dateStr){
 		long tsNow = System.currentTimeMillis();
-		
-		StringBuilder sb = new StringBuilder();
-		for (int n=0; n < 5; n++)
-			sb.append(dataParts[n]);
-		String dateStr = sb.toString();
+
 		try {
-			Date evDate = SDF_NDBC.parse(dateStr);
-			return evDate.getTime();
+			Date evDate = c_SDF_NDBC.parse(dateStr);
+			long evTime = evDate.getTime();
+			if (evTime < tsNow){
+				return evTime;
+			}
+			else {
+				setError("Time calculation ERROR, time received is in the future DATESTR="+dateStr);	
+				return 0L;
+			}
 		} 
 		catch (ParseException e) {
-			setWarning("Failed parsing NDBC Data DATE="+dateStr+" Using current time.");
-			return tsNow;
+			setError("Failed parsing NDBC Time Data DATESTR="+dateStr);
+			return 0L;
 		}
 	}
 	private void getAllData(long ts, AnalysisCompoundData acd, String[] dataParts){
@@ -159,11 +189,14 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 						setError("Unable to add NDBC data point LABEL="+DATA_LABELS[n]+" DATA="+dataParts[n]);
 					}
 				}
-				else {  // If there is not a value but there was a recent one (< 1 1/2 hours) use that one
-					if (c_LastValues[n] != null && (ts - c_LastValueTime[n]) < 4400000L){
-						if (isTraceLogging())
-							logTrace("No current value for LABEL="+DATA_LABELS[n]+" using previously received data, VALUE="+c_LastValues[n]);
-						acd.addAnalysisData(DATA_LABELS[n], c_LastValues[n]);
+				else {  // If there is not a value but there was a recent one (< MaxFillAge) use that one
+					if (c_LastValues[n] != null && c_FillMissingData.booleanValue()){
+						long maxAgeMillis = c_MaxFillAge.longValue()*60000L; // get age time in millis.
+						if ((ts - c_LastValueTime[n]) < maxAgeMillis ){
+							if (isTraceLogging())
+								logTrace("No current value for LABEL="+DATA_LABELS[n]+" using previously received data, VALUE="+c_LastValues[n]);
+							acd.addAnalysisData(DATA_LABELS[n], c_LastValues[n]);
+						}
 					}
 				}
 			}
