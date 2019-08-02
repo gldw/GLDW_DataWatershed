@@ -12,29 +12,34 @@
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The identifying code assigned to the buoy.</attr>		
 	</datadef>
-	<datadef name="GeoLatitude">
+	<datadef name="BuoyDetails">
 		<attr name="EditOrder" type="Integer">22</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="Desc">Provide additional information regarding the Buoy.</attr>		
+	</datadef>
+	<datadef name="GeoLatitude">
+		<attr name="EditOrder" type="Integer">23</attr>
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The latitude of the buoy</attr>		
 	</datadef>
 	<datadef name="GeoLongitude">
-		<attr name="EditOrder" type="Integer">23</attr>
+		<attr name="EditOrder" type="Integer">24</attr>
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The longitude of the buoy.</attr>		
 	</datadef>
 	<datadef name="GeoAltitude">
-		<attr name="EditOrder" type="Integer">24</attr>
+		<attr name="EditOrder" type="Integer">25</attr>
 		<attr name="Category">Standard</attr>
 		<attr name="Desc">The altitude of the buoy.</attr>		
 	</datadef>
 	<datadef name="FillMissingData">
-		<attr name="EditOrder" type="Integer">25</attr>
+		<attr name="EditOrder" type="Integer">26</attr>
 		<attr name="RefreshOnChange" type="Boolean">true</attr>
 		<attr name="Category">Standard</attr>
 		<attr name="Desc">Use previously received data for metrics not currently reported. Set the MaxFillAge to identify how old the filled data can be.</attr>		
 	</datadef>
 	<datadef name="MaxFillAge">
-		<attr name="EditOrder" type="Integer">26</attr>
+		<attr name="EditOrder" type="Integer">27</attr>
 		<attr name="Category">Standard</attr>
 		<attr name="MaxChars" type="Integer">3</attr>
 		<attr name="Desc">The maximum age in minutes for old data metrics that will be used to fill missing data in the current report.</attr>		

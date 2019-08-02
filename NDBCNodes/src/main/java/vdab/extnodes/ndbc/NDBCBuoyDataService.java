@@ -32,6 +32,7 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	private Double[] c_LastValues = new Double[19];
 	private long[] c_LastValueTime = new long[19];
 	private String c_BuoyID;
+	private String c_BuoyDetails;
 	private Boolean c_FillMissingData = Boolean.FALSE;
 	private Long c_MaxFillAge = Long.valueOf(60L);
 	private long c_LastEventTimestamp = 0L;
@@ -44,6 +45,12 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	}
 	public void set_BuoyID(String code){
 		c_BuoyID = code;
+	}
+	public String get_BuoyDetails() { 
+		return c_BuoyDetails;
+	}
+	public void set_BuoyDetails(String details){
+		c_BuoyDetails = details;
 	}
 	public Boolean get_FillMissingData() {
 		return c_FillMissingData;
@@ -138,6 +145,9 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 			if (ts > c_LastEventTimestamp) { // This is a new value.
 				c_LastEventTimestamp = ts+MIN_TIMECHANGE;
 				AnalysisCompoundData acd = new AnalysisCompoundData(DATA_LABEL);
+				if (c_BuoyDetails != null)
+					acd.addAnalysisData("BuoyInfo", c_BuoyDetails);
+	
 				getAllData(ts, acd, dataParts);
 				AnalysisEvent ev = new AnalysisEvent(ts, this, acd);
 				c_cdb_ProcessedTimes.set(dateStr.substring(6));
@@ -202,6 +212,6 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 			}
 			
 		}
-		
+	
 	}
 }
