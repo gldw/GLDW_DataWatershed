@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<nodedefs>
+<nodedef name="WQDataService" class="vdab.extnodes.wqdata.WQDataService">
+	<attr name="Group">Data</attr>
+	<attr name="ConsumedEventTypes">Trigger,Event</attr>
+    <attr name="PublishedEventTypes">Event</attr>
+    <attr name="NodeOverview">Retrieves data from WQData Live</attr>   
+    <attr name="NodeDescTemplate"> Project=${ProjectCode}</attr>
+	<attr name="NodeQuality" >Beta</attr>  
+	<datadef name="ProjectCode">
+		<attr name="EditOrder" type="Integer">21</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The WQData Project Code.</attr>		
+	</datadef>
+	<datadef name="ParamIDs">
+		<attr name="EditOrder" type="Integer">22</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The Paratere IDs that should be read.</attr>		
+	</datadef>
+
+</nodedef>
+</nodedefs>
