@@ -5,18 +5,43 @@
 	<attr name="ConsumedEventTypes">Trigger,Event</attr>
     <attr name="PublishedEventTypes">Event</attr>
     <attr name="NodeOverview">Retrieves data from WQData Live</attr>   
-    <attr name="NodeDescTemplate"> Project=${ProjectCode}</attr>
+    <attr name="NodeDescTemplate"> ${ProjectCode}-${StationName} </attr>
 	<attr name="NodeQuality" >Beta</attr>  
 	<datadef name="ProjectCode">
 		<attr name="EditOrder" type="Integer">21</attr>
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The WQData Project Code.</attr>		
 	</datadef>
-	<datadef name="ParamIDs">
+	<datadef name="StationName">
 		<attr name="EditOrder" type="Integer">22</attr>
 		<attr name="Category">Required</attr>
-		<attr name="Desc">The Paratere IDs that should be read.</attr>		
+		<attr name="Desc">The name of the WQData station</attr>		
 	</datadef>
-
+		<datadef name="DataLabel">
+		<attr name="EditOrder" type="Integer">23</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="Desc">The label associated with data. Default is WQData</attr>		
+	</datadef>
+	<datadef name="ParamIDs">
+		<attr name="EditOrder" type="Integer">24</attr>
+		<attr name="RefreshOnChange" type="Boolean">true</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The Parameter IDs that should be read.</attr>		
+	</datadef>
+	<datadef name="GeoLatitude">
+		<attr name="EditOrder" type="Integer">31</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The latitude of the buoy or station</attr>		
+	</datadef>
+	<datadef name="GeoLongitude">
+		<attr name="EditOrder" type="Integer">32</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The longitude of the buoy or station.</attr>		
+	</datadef>
+	<datadef name="GeoAltitude">
+		<attr name="EditOrder" type="Integer">33</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="Desc">The altitude of the buoy or station.</attr>		
+	</datadef>
 </nodedef>
 </nodedefs>

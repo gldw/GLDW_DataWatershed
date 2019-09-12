@@ -6,8 +6,10 @@ import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.TimeZone;
 
+import com.lcrc.af.AnalysisCompoundData;
 import com.lcrc.af.AnalysisData;
 import com.lcrc.af.AnalysisDataDef;
 import com.lcrc.af.AnalysisEvent;
@@ -26,7 +28,13 @@ public class WQDataService extends HTTPService_A{
 	private  DateFormat c_WQDateFormat = new SimpleDateFormat("MM-dd-yyyy HH:mm:ss");	
 	private Integer c_ProjectCode;
 	private String c_TimeZone ;
-
+	private LinkedList<String> c_ActiveIDQueue = new LinkedList<String>();
+	private String c_LastParamID = "NONE";
+	private String c_StationName ;
+	private String c_DataLabel = "WQData" ;
+	private AnalysisCompoundData c_CurrentData ;
+	private AnalysisEvent c_CurrentEvent;
+	
 	private ControlDataBuffer c_cdb_ParamIDs = new ControlDataBuffer("WQDataService_ParameterIDs");;
 	public Integer get_IconCode(){
 		return  IconUtility.getIconHashCode("node_wqdata");
@@ -57,8 +65,15 @@ public class WQDataService extends HTTPService_A{
 		}
 		else {
 		// One value to add.
-			if (!c_cdb_ParamIDs.isSet(ids))
-				c_cdb_ParamIDs.set(ids);
+			if (!c_cdb_ParamIDs.isSet(ids)){
+				String digits = StringUtility.digitsOnly(ids);
+				if (digits.length() != 5 ){
+					setError("ParamID must be a 5 digit number ID_ENTERED="+ids);
+				}
+				else {
+					c_cdb_ParamIDs.set(digits);
+				}
+			}
 		}
 	}
 	public AnalysisDataDef def_ParamIDs(AnalysisDataDef theDataDef){
@@ -67,6 +82,18 @@ public class WQDataService extends HTTPService_A{
 			l.add(SpecialText.CLEAR);
 		theDataDef.setAllPickValues(l.toArray(new String[l.size()]));
 		return theDataDef;
+	}
+	public void set_StationName(String name){
+		 c_StationName =name;
+	}
+	public String get_StationName(){
+		return c_StationName;
+	}
+	public void set_DataLabel(String label){
+		 c_DataLabel = label;
+	}
+	public String get_DataLabel(){
+		return  c_DataLabel;
 	}
 	@Override
 	public void _init(){
@@ -86,15 +113,21 @@ public class WQDataService extends HTTPService_A{
 		sb.append(c_ProjectCode);
 		sb.append("/data");
 		return sb.toString();
+	}	
+	@Override
+	public String getDataPath(){		
+		return c_StationName;
 	}
 	@Override
 	public synchronized void processEvent(AnalysisEvent ev){
 		
+		if (c_ActiveIDQueue.size() > 0){
+			setError("Processing ID List not empty - failed to process event");
+			return;
+		}
+		c_CurrentData  = new AnalysisCompoundData(c_DataLabel);
 		if (ev.isTriggerEvent()){
-			for (String paramID: c_cdb_ParamIDs.getAllSet()){
-				new ServiceHandler_HTTP(this, new AnalysisEvent(this, new AnalysisData("paramID",paramID)));	
-				break;
-			}
+			c_cdb_ParamIDs.addAllToList(c_ActiveIDQueue);
 		}
 		else { // Not trigger event
 			AnalysisData ad = getSelectedData(ev);
@@ -103,17 +136,25 @@ public class WQDataService extends HTTPService_A{
 				return;
 			}
 			if (ad.getLabel().equalsIgnoreCase("PARAMID")){
-				new ServiceHandler_HTTP(this, new AnalysisEvent(this, new AnalysisData("paramID",ad.getDataAsString())));
+				c_ActiveIDQueue.add(ad.getDataAsString());
 			}
 			else {
-				for (String paramID: c_cdb_ParamIDs.getAllSet()){
-					new ServiceHandler_HTTP(this, new AnalysisEvent(this, new AnalysisData("paramID",paramID)));	
-					break;
-				}
-		
+				c_cdb_ParamIDs.addAllToList(c_ActiveIDQueue);
 			}
 		}
+		processNextParamID();
+
 	}
+	private synchronized void processNextParamID() {
+		String nextID = c_ActiveIDQueue.pop();
+		if (nextID == null){
+			setError("Could not find next event");
+			return;
+		}
+		c_LastParamID = nextID;
+		new ServiceHandler_HTTP(this, new AnalysisEvent(this, new AnalysisData("paramID", nextID)));
+	}
+
 	@Override
 	public String buildPost(AnalysisEvent ev){
 		StringBuilder sb = new StringBuilder();
@@ -152,11 +193,15 @@ public class WQDataService extends HTTPService_A{
 			long t0 = System.currentTimeMillis();
 			if (isTraceLogging())
 				logTrace("Received data time information: DATE="+dataTableParts[0]+" OFFSET="+(t0-ts)/60000L+" minutes");
-			
+			if (c_CurrentEvent != null ){
+				long tDiff = Math.abs(ts-c_CurrentEvent.getTS());
+				if (tDiff > 60000L)
+					setWarning("Excessive time difference for multiple datasets DIFF="+tDiff);
+			}
 			ArrayList<String> titles = StringUtility.locateAllBetween(rawData,"\"title\":\"", "\",");
 			String label = null;
 			if (titles.size() > 1)
-				label = titles.get(1);
+				label = titles.get(1).replace("\\","");
 	
 			String value = null;
 			if (dataTableParts.length > 1)
@@ -166,8 +211,11 @@ public class WQDataService extends HTTPService_A{
 				serviceFailed(inEvent, 4);
 				return;	
 			}
-			AnalysisEvent ev = new AnalysisEvent(ts, this, new AnalysisData(label, Double.valueOf(value)));
-			serviceResponse(inEvent, ev);
+			c_CurrentData.addAnalysisData(new AnalysisData(label, Double.valueOf(value)));
+			if (c_CurrentEvent == null){
+				c_CurrentEvent = new AnalysisEvent(ts, this, c_CurrentData );
+			}
+			serviceResponse(inEvent, c_CurrentEvent);
 		}
 		catch (Exception e){
 			setError("Failed processing return data e>"+e);
@@ -175,4 +223,23 @@ public class WQDataService extends HTTPService_A{
 		}
 
 	}
+	@Override
+	public void serviceResponse(AnalysisEvent inEv, AnalysisEvent respEv){
+		if (c_ActiveIDQueue.isEmpty()){
+			c_CurrentData  =  null;
+			c_CurrentEvent = null;
+			super.serviceResponse(inEv, respEv);
+		}
+		else {
+			this.processNextParamID();
+		}
+	}
+	@Override
+	public void serviceFailed(AnalysisEvent inEv, int code){
+		if (c_ActiveIDQueue.isEmpty())
+			super.serviceFailed(inEv, code);
+		else
+			setWarning("Service failed processing parameter, continuing with others, PARAMID="+c_LastParamID);
+	}
+
 }
