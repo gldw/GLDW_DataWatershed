@@ -55,8 +55,12 @@ public class WQDataService extends HTTPService_A{
 	}	
 	public void set_ParamIDs(String ids){	
 		// Multiple attributes, probably read from xml
+
 		if (ids.contains(",")){
-			c_cdb_ParamIDs.setAll(ids,","); 			
+			String[] allIds = ids.split(",");
+			String digits = checkParamDigits(allIds[allIds.length-1]);
+			if (digits != null)
+				c_cdb_ParamIDs.setAll(ids,","); 			
 		} 
 		// Clear command from option picker
 		else if (ids.equals(SpecialText.CLEAR)){
@@ -64,17 +68,21 @@ public class WQDataService extends HTTPService_A{
 			return;
 		}
 		else {
-		// One value to add.
+			// One value to add.
 			if (!c_cdb_ParamIDs.isSet(ids)){
-				String digits = StringUtility.digitsOnly(ids);
-				if (digits.length() != 5 ){
-					setError("ParamID must be a 5 digit number ID_ENTERED="+ids);
-				}
-				else {
+				String digits = checkParamDigits(ids);
+				if (digits != null)
 					c_cdb_ParamIDs.set(digits);
-				}
 			}
 		}
+	}
+	private String checkParamDigits(String id){
+		String digits = StringUtility.digitsOnly(id);
+		if (digits.length() > 5 || digits.length() < 4 ){
+			setError("ParamID must be a 5 or 5 digit number ID_ENTERED="+id);
+			return null;
+		}
+		return digits;
 	}
 	public AnalysisDataDef def_ParamIDs(AnalysisDataDef theDataDef){
 		ArrayList<String> l = new ArrayList<String>();
