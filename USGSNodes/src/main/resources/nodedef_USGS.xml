@@ -23,5 +23,15 @@
 		<attr name="RefreshOnChange" type="Boolean">true</attr>		
 		<attr name="Desc">Select the fields that should be reported.</attr>		
 	</datadef>
+	<datadef name="DropRepeatReports">
+		<attr name="EditOrder" type="Integer">24</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">If set, does not send reported values that were previously sent.</attr>		
+	</datadef>
+	<datadef name="TriggerStartAndEnd">
+	  <attr name="Category">Standard</attr> 
+	  <attr name="EditOrder" type="Integer">111</attr>
+	  <attr name="Desc">If set an event trigger is sent to the next node in the flow to let it know when the retrieve was started and when it ended.</attr> 	
+	</datadef>
 </nodedef>
 </nodedefs>
