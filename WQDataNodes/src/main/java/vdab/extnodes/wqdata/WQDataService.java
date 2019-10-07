@@ -130,8 +130,8 @@ public class WQDataService extends HTTPService_A{
 	public synchronized void processEvent(AnalysisEvent ev){
 		
 		if (c_ActiveIDQueue.size() > 0){
-			setError("Processing ID List not empty - failed to process event");
-			return;
+			setError("Processing ID List not empty when expected, CLEARING, would have failed to process entire last event.");
+			c_ActiveIDQueue.clear();
 		}
 		c_CurrentData  = new AnalysisCompoundData(c_DataLabel);
 		if (ev.isTriggerEvent()){
@@ -217,13 +217,20 @@ public class WQDataService extends HTTPService_A{
 			if (value == null || label == null){
 				setError("Unable to interpret returned data DATA="+tableData);
 				serviceFailed(inEvent, 4);
-				return;	
+				return;
 			}
-			c_CurrentData.addAnalysisData(new AnalysisData(label, Double.valueOf(value)));
-			if (c_CurrentEvent == null){
-				c_CurrentEvent = new AnalysisEvent(ts, this, c_CurrentData );
+			if (value.startsWith("-1000")) {
+				setWarning("Data value undefined LABEL=" + label + " VALUE="
+						+ value);
+				serviceFailed(inEvent, 3);
+			} else {
+				c_CurrentData.addAnalysisData(new AnalysisData(label, Double
+						.valueOf(value)));
+				if (c_CurrentEvent == null) {
+					c_CurrentEvent = new AnalysisEvent(ts, this, c_CurrentData);
+				}
+				serviceResponse(inEvent, c_CurrentEvent);
 			}
-			serviceResponse(inEvent, c_CurrentEvent);
 		}
 		catch (Exception e){
 			setError("Failed processing return data e>"+e);

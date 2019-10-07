@@ -32,6 +32,7 @@ public class USGSWaterWatchService  extends HTTPService_A{
 	private String c_HUCodeMatch;
 	private String c_RegionCode;
 	private Integer c_DataNamingApproach;
+	private Boolean c_DropRepeatReports = Boolean.TRUE;
 	DateFormat c_WWDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");	
 	String c_WWLastTZ = "";
 	private ControlDataBuffer c_cdb_AvailableOriginalFields = new ControlDataBuffer("AvailableOriginalFields",new String[]{"tz_cd","dec_lat_va","station_nm","stage_dt","flow_unit","class","dec_long_va","url","site_no","percentile","stage","percent_median","flow_dt","stage_unit","huc_cd","percent_mean","flow"});
@@ -64,7 +65,12 @@ public class USGSWaterWatchService  extends HTTPService_A{
 	public void set_DataNamingApproach(Integer type){
 		c_DataNamingApproach = type;
 	}
-
+	public Boolean get_DropRepeatReports(){
+		return c_DropRepeatReports;
+	}
+	public void set_DropRepeatReports(Boolean drop){
+		c_DropRepeatReports = drop;
+	}
 	public String get_SelectedFields() {
 		if(c_cdb_SelectedFields.isEmpty())
 			return null;
@@ -128,7 +134,7 @@ public class USGSWaterWatchService  extends HTTPService_A{
 
 	}
 	private HashMap<String,String> c_LastRecord_map = new HashMap<String, String>();
-	private String getDataPath(String siteno){
+	private String getUSGSDataPath(String siteno){
 		StringBuilder sb = new StringBuilder();
 		sb.append(c_RegionCode.toUpperCase());
 		sb.append(siteno);
@@ -206,7 +212,7 @@ public class USGSWaterWatchService  extends HTTPService_A{
 //				setWarning(">>>> THE times are not the same STAGE="+stageTimeStr+" FLOW="+flowTimeStr+" SITE="+siteno);
 			}
 
-			AnalysisEvent ev = new AnalysisEvent(ts,getDataPath(siteno),acd);
+			AnalysisEvent ev = new AnalysisEvent(ts,getUSGSDataPath(siteno),acd);
 			ev.setLocation(GeoUnits.DEGREES_NE_METERS, latitude, longitude, null);
 			return ev;
 		}
@@ -221,7 +227,7 @@ public class USGSWaterWatchService  extends HTTPService_A{
 
 		int failedCount = 0;
 		for(String locJson: locJsonList){
-			if (!hasChanged(locJson))
+			if (c_DropRepeatReports.booleanValue() && !hasChanged(locJson))
 				continue;
 			String huc = StringUtility.locateBetween(locJson, HUC_CODE_START ,"\",");
 			if (huc == null){
