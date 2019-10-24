@@ -25,6 +25,7 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	private static String[] DATA_LABELS = new String[]{"","","","","","WindDirection","WindSpeed","GustSpeed","WaveHeight","DominantWavePeriod","AverageWavePeriod","MedianWaveDirection","AtmosphericPressure","AirTemperature","WaterTemperature","DewPoint","Visibility","PressureTendency","Tide"};
 	private static String DATA_LABEL= "NDBCData";
 	private static String API_ENDPOINT= "https://www.ndbc.noaa.gov/data/realtime2/";
+	private static String LINK_ENDPOINT=  "https://www.ndbc.noaa.gov/station_page.php?station=";
 	private static String PATH_PREFIX = "NDBC_";
 	private static long MIN_TIMECHANGE = 100L;
 	
@@ -45,6 +46,12 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	}
 	public void set_BuoyID(String code){
 		c_BuoyID = code;
+	}
+	public String get_StationURL(){
+		return getStationURL(); 
+	}
+	private String getStationURL(){
+		return LINK_ENDPOINT+c_BuoyID;
 	}
 	public String get_BuoyDetails() { 
 		return c_BuoyDetails;
@@ -106,6 +113,12 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 				}
 			}
 
+			if (isTraceLogging()){
+				logTrace("NDBC header1>"+lineHeader1);
+				logTrace("NDBC header2>"+lineHeader2);
+				logTrace("NDBC data   >"+dataLine);
+			}
+			
 			if (!lineHeader1.equals(PROPER_HEADER)){
 				setWarning("NDBC data header not in expected format, not reading data");
 				serviceFailed(inEvent, 4);
@@ -147,7 +160,7 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 				AnalysisCompoundData acd = new AnalysisCompoundData(DATA_LABEL);
 				if (c_BuoyDetails != null)
 					acd.addAnalysisData("BuoyInfo", c_BuoyDetails);
-	
+				acd.addAnalysisData("StationURL", getStationURL());
 				getAllData(ts, acd, dataParts);
 				AnalysisEvent ev = new AnalysisEvent(ts, this, acd);
 				c_cdb_ProcessedTimes.set(dateStr.substring(6));
@@ -187,6 +200,7 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 		}
 	}
 	private void getAllData(long ts, AnalysisCompoundData acd, String[] dataParts){
+
 		for (int n=0; n < DATA_LABELS.length; n++){
 			if (DATA_LABELS[n].length() > 0 ){ // If there is a label, should look for that value.
 				if (!dataParts[n].equals("MM")) { // If value is available, use it
