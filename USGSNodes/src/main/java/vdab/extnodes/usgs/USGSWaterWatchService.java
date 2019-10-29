@@ -114,7 +114,8 @@ public class USGSWaterWatchService  extends HTTPService_A{
 		sb.append("&format=json");
 		return sb.toString();
 	}
-	public void processReturnStream(AnalysisEvent inEvent, int retCode, InputStream is) {
+	// TRYIT - Try this to prevent crosstalk on Latitude and Longitude
+	public synchronized void processReturnStream(AnalysisEvent inEvent, int retCode, InputStream is) {
 		BufferedReader in = new BufferedReader(new InputStreamReader(is));
 		String line;
 		StringBuilder sb = new StringBuilder();
