@@ -32,8 +32,10 @@ public class WQDataService extends HTTPService_A{
 	private String c_LastParamID = "NONE";
 	private String c_StationName ;
 	private String c_DataLabel = "WQData" ;
+	private Boolean c_DropRepeatReports = Boolean.FALSE;
 	private AnalysisCompoundData c_CurrentData ;
 	private AnalysisEvent c_CurrentEvent;
+	private AnalysisEvent c_LastEvent;
 	
 	private ControlDataBuffer c_cdb_ParamIDs = new ControlDataBuffer("WQDataService_ParameterIDs");;
 	public Integer get_IconCode(){
@@ -102,6 +104,12 @@ public class WQDataService extends HTTPService_A{
 	}
 	public String get_DataLabel(){
 		return  c_DataLabel;
+	}
+	public Boolean get_DropRepeatReports(){
+		return c_DropRepeatReports;
+	}
+	public void set_DropRepeatReports(Boolean drop){
+		c_DropRepeatReports = drop;
 	}
 	@Override
 	public void _init(){
@@ -229,7 +237,10 @@ public class WQDataService extends HTTPService_A{
 				if (c_CurrentEvent == null) {
 					c_CurrentEvent = new AnalysisEvent(ts, this, c_CurrentData);
 				}
+				
 				serviceResponse(inEvent, c_CurrentEvent);
+	
+				
 			}
 		}
 		catch (Exception e){
@@ -238,17 +249,31 @@ public class WQDataService extends HTTPService_A{
 		}
 
 	}
+
 	@Override
-	public void serviceResponse(AnalysisEvent inEv, AnalysisEvent respEv){
-		if (c_ActiveIDQueue.isEmpty()){
-			c_CurrentData  =  null;
+	public void serviceResponse(AnalysisEvent inEv, AnalysisEvent respEv) {
+		if (c_ActiveIDQueue.isEmpty()) {
+			c_CurrentData = null;
 			c_CurrentEvent = null;
+			if (c_DropRepeatReports.booleanValue()) { // DROP REPEATS
+				if (c_LastEvent != null && respEv.getTS() == c_LastEvent.getTS()) {
+					if (isTraceLogging())
+						logTrace("Dropping repeated report EVENT" + respEv);
+					return;
+				}
+			}
+			else {  // DON'T DROP - use current time by creating new event
+				if (c_LastEvent != null && respEv.getTS() == c_LastEvent.getTS()) {
+					respEv = new AnalysisEvent(this, respEv.getAnalysisData());
+				}
+			}
 			super.serviceResponse(inEv, respEv);
-		}
-		else {
+			c_LastEvent = respEv;
+		} else {
 			this.processNextParamID();
 		}
 	}
+
 	@Override
 	public void serviceFailed(AnalysisEvent inEv, int code){
 		if (c_ActiveIDQueue.isEmpty())

@@ -28,6 +28,11 @@
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The Parameter IDs that should be read.</attr>		
 	</datadef>
+	<datadef name="DropRepeatReports">
+		<attr name="EditOrder" type="Integer">25</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">If set, does not send reported values that were previously sent.</attr>		
+	</datadef>
 	<datadef name="GeoLatitude">
 		<attr name="EditOrder" type="Integer">31</attr>
 		<attr name="Category">Required</attr>
