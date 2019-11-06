@@ -36,7 +36,7 @@
 		<attr name="EditOrder" type="Integer">26</attr>
 		<attr name="RefreshOnChange" type="Boolean">true</attr>
 		<attr name="Category">Standard</attr>
-		<attr name="Desc">Use previously received data for metrics not currently reported. Set the MaxFillAge to identify how old the filled data can be.</attr>		
+		<attr name="Desc">DOESN'T WORK IGNORED, Use previously received data for metrics not currently reported. Set the MaxFillAge to identify how old the filled data can be.</attr>		
 	</datadef>
 	<datadef name="MaxFillAge">
 		<attr name="EditOrder" type="Integer">27</attr>

@@ -213,6 +213,8 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 						setError("Unable to add NDBC data point LABEL="+DATA_LABELS[n]+" DATA="+dataParts[n]);
 					}
 				}
+				// Fill Missing Data - DOES NOT WORK 
+				/*
 				else {  // If there is not a value but there was a recent one (< MaxFillAge) use that one
 					if (c_LastValues[n] != null && c_FillMissingData.booleanValue()){
 						long maxAgeMillis = c_MaxFillAge.longValue()*60000L; // get age time in millis.
@@ -223,6 +225,7 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 						}
 					}
 				}
+				*/
 			}
 			
 		}
