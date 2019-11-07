@@ -24,6 +24,8 @@ import com.lcrc.af.util.StringUtility;
 import vdab.api.node.HTTPService_A;
 
 import vdab.core.dataencode.JsonUtility;
+import vdab.core.nodes.units.MeasurementUnit;
+import vdab.core.nodes.units.UnitAdder;
 
 
 public class USGSWaterWatchService  extends HTTPService_A{
@@ -42,8 +44,10 @@ public class USGSWaterWatchService  extends HTTPService_A{
 	private static String SITES_START= "{\"sites\":[";
 	private static String SITENO_START= "{\"site_no\":";
 	private static String HUC_CODE_START= ",\"huc_cd\":\"";
-	
-
+	private static UnitAdder s_UnitAdder = new UnitAdder()
+	.addUnit("percentile",MeasurementUnit.NOTA_PERCENTAGE)
+	.addUnit("stage",MeasurementUnit.DISTANCE_FEET)
+	;
 	public Integer get_IconCode(){
 		return  IconUtility.getIconHashCode("node_usgs");
 	}
@@ -212,7 +216,7 @@ public class USGSWaterWatchService  extends HTTPService_A{
 				ts = (flowTime > stageTime)? flowTime: stageTime;
 //				setWarning(">>>> THE times are not the same STAGE="+stageTimeStr+" FLOW="+flowTimeStr+" SITE="+siteno);
 			}
-
+			s_UnitAdder.addAllUnitData(acd); // Add known units
 			AnalysisEvent ev = new AnalysisEvent(ts,getUSGSDataPath(siteno),acd);
 			ev.setLocation(GeoUnits.DEGREES_NE_METERS, latitude, longitude, null);
 			return ev;

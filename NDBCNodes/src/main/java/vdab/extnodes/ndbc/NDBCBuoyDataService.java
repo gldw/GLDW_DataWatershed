@@ -18,6 +18,8 @@ import com.lcrc.af.util.ControlDataBuffer;
 import com.lcrc.af.util.IconUtility;
 
 import vdab.api.node.HTTPService_A;
+import vdab.core.nodes.units.MeasurementUnit;
+import vdab.core.nodes.units.UnitAdder;
 
 public class NDBCBuoyDataService  extends HTTPService_A{
 	private static String PROPER_HEADER="#YY  MM DD hh mm WDIR WSPD GST  WVHT   DPD   APD MWD   PRES  ATMP  WTMP  DEWP  VIS PTDY  TIDE";
@@ -28,6 +30,15 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	private static String LINK_ENDPOINT=  "https://www.ndbc.noaa.gov/station_page.php?station=";
 	private static String PATH_PREFIX = "NDBC_";
 	private static long MIN_TIMECHANGE = 100L;
+	private static UnitAdder s_UnitAdder = new UnitAdder()
+		.addUnit("GustSpeed",MeasurementUnit.SPEED_METER_SECOND)
+		.addUnit("WindSpeed",MeasurementUnit.SPEED_METER_SECOND)
+		.addUnit("AtmosphericPressure",MeasurementUnit.PRESSURE_MBAR)
+		.addUnit("AirTemperature",MeasurementUnit.TEMP_DEG_CELSIUS)
+		.addUnit("WaterTemperature",MeasurementUnit.TEMP_DEG_CELSIUS)
+		.addUnit("WaveHeight",MeasurementUnit.DISTANCE_METER)
+		.addUnit("WaterTemperature",MeasurementUnit.TEMP_DEG_CELSIUS)
+		;
 	
 	private SimpleDateFormat c_SDF_NDBC = new SimpleDateFormat("yyyyMMddHHmm");
 	private Double[] c_LastValues = new Double[19];
@@ -38,6 +49,7 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	private Long c_MaxFillAge = Long.valueOf(60L);
 	private long c_LastEventTimestamp = 0L;
 	private ControlDataBuffer c_cdb_ProcessedTimes = new ControlDataBuffer("NDBCProcessedTimes");
+
 	public Integer get_IconCode(){
 		return  IconUtility.getIconHashCode("node_noaa");
 	}
@@ -84,6 +96,10 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 		c_SDF_NDBC.setTimeZone(TimeZone.getTimeZone("GMT"));	
 		super._init();
 	
+	}
+	public void _reset(){
+		c_cdb_ProcessedTimes.clear();
+		super._reset();
 	}
 	public String buildCompleteURL(AnalysisEvent ev) {
 		StringBuilder sb = new StringBuilder();
@@ -162,6 +178,7 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 					acd.addAnalysisData("BuoyInfo", c_BuoyDetails);
 				acd.addAnalysisData("StationURL", getStationURL());
 				getAllData(ts, acd, dataParts);
+				s_UnitAdder.addAllUnitData(acd); // Add units to data
 				AnalysisEvent ev = new AnalysisEvent(ts, this, acd);
 				c_cdb_ProcessedTimes.set(dateStr.substring(6));
 				c_cdb_ProcessedTimes.trimTo(8);
@@ -229,6 +246,5 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 			}
 			
 		}
-	
 	}
 }
