@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<nodedefs>
+<nodedef name="ApplyCalibration" class="vdab.extnodes.analytical.ApplyCalibration">
+	<attr name="Group">Analytical</attr>
+	<attr name="ConsumedEventTypes">Event</attr>
+    <attr name="PublishedEventTypes">Event</attr>
+    <attr name="NodeOverview">Apply calibration to an incoming raw value.</attr>   
+    <attr name="NodeDescTemplate">Apply Calibration</attr>
+	<attr name="NodeQuality" >Prototype</attr>  
+	<datadef name="SelectedElement">
+	    <attr name="EditOrder" type="Integer">2</attr>
+		<attr name="Category">Required</attr>
+	</datadef>
+	<datadef name="CalibrationApproach">
+		<attr name="EditOrder" type="Integer">3</attr>
+		<attr name="RefreshOnChange" type="Boolean">true</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Enum">CalibrationApproach</attr>
+		<attr name="Desc">The approach that will be used for the calibration.</attr>
+	</datadef>
+	<datadef name="MetricLabel">
+		<attr name="EditOrder" type="Integer">11</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="Desc">Label for the metric value.</attr>
+	</datadef>
+	<datadef name="MetricUnit">
+		<attr name="EditOrder" type="Integer">12</attr>
+		<attr name="Enum">MeasurementUnit</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="Desc">Metric unit type for the calibrated metric.</attr>
+	</datadef>
+	<datadef name="Slope">
+		<attr name="EditOrder" type="Integer">31</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The slope for linear conversions.</attr>
+	</datadef>
+	<datadef name="Intercept">
+		<attr name="EditOrder" type="Integer">32</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The intercept for linear conversions.</attr>
+	</datadef>
+	<datadef name="CalibrationStep">
+		<attr name="RefreshOnChange" type="Boolean">true</attr>
+		<attr name="EditOrder" type="Integer">21</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Enum">CalibrationStep</attr>
+		<attr name="Desc">Selects the current calibration step.</attr>		
+	</datadef>
+	<datadef name="AddRawValue">
+		<attr name="EditOrder" type="Integer">22</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The raw value  </attr>	
+	</datadef>
+	<datadef name="AddCalibratedValue">
+		<attr name="EditOrder" type="Integer">23</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The calibrated value.</attr>		
+		<attr name="RefreshOnChange" type="Boolean">true</attr>
+	</datadef>
+	<datadef name="CalibrationPoints">
+		<attr name="EditOrder" type="Integer">51</attr>
+		<attr name="Category">Standard</attr>
+	</datadef>
+</nodedef>
+</nodedefs>
