@@ -47,6 +47,7 @@ public class USGSWaterWatchService  extends HTTPService_A{
 	private static UnitAdder s_UnitAdder = new UnitAdder()
 	.addUnit("percentile",MeasurementUnit.NOTA_PERCENTAGE)
 	.addUnit("stage",MeasurementUnit.DISTANCE_FEET)
+	.addUnit("flow",MeasurementUnit.FLOW_FEET3_SEC)
 	;
 	public Integer get_IconCode(){
 		return  IconUtility.getIconHashCode("node_usgs");
