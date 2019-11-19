@@ -10,7 +10,8 @@ public class CalibrationApproach {
 	private static AFEnum s_EnumCalibrationApproach = new AFEnum("CalibrationApproach")
 	.addEntry(SLOPEINTERCEPT , "Enter Slope Intercept")
 	.addEntry(TWOPOINT, "Two Point Calibration")
-	.addEntry(MULTIPOINT, "Multi Point Calibration");
+	.addEntry(MULTIPOINT, "Multi Point Calibration")
+	;
 
 	public static AFEnum getEnum(){
 		return s_EnumCalibrationApproach;

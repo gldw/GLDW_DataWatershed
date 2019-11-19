@@ -2,6 +2,7 @@ package vdab.extnodes.analytical;
 
 import java.util.ArrayList;
 
+import com.lcrc.af.AnalysisCompoundData;
 import com.lcrc.af.AnalysisData;
 import com.lcrc.af.AnalysisDataDef;
 import com.lcrc.af.AnalysisEvent;
@@ -16,6 +17,7 @@ public class ApplyCalibration extends AnalysisFunction {
 	private ArrayList<Double> c_RawValues = new ArrayList<Double>();
 	private ArrayList<Double> c_CalibratedValues = new ArrayList<Double>();
 	// Expected Relationship.
+	private Boolean c_RetainBoth = Boolean.TRUE;
 	private Integer c_CalibrationStep = CalibrationStep.ADDPOINT; 
 	private Integer c_CalibrationApproach = CalibrationApproach.SLOPEINTERCEPT;
 	private String c_MetricLabel ;
@@ -39,6 +41,12 @@ public class ApplyCalibration extends AnalysisFunction {
 		
 		return theDataDef;
 	}
+	public Boolean get_RetainRawValue(){
+		return c_RetainBoth;
+	}
+	public void set_RetainRawValue(Boolean retain){
+		c_RetainBoth = retain;
+	}
 	public void set_AddRawValue(Double value){
 		c_RawValues.add(value);
 	}
@@ -58,9 +66,6 @@ public class ApplyCalibration extends AnalysisFunction {
 		case CalibrationStep.CLEARPOINTS:
 			theDataDef.disable();
 			break;
-		case CalibrationStep.READPOINT:
-			theDataDef.setReadonly();
-			break;
 		}
 		return theDataDef;
 	}
@@ -79,8 +84,6 @@ public class ApplyCalibration extends AnalysisFunction {
 
 		switch (c_CalibrationStep.intValue()){		
 		case CalibrationStep.ADDPOINT:
-			if (c_RawValues.size() <= c_CalibratedValues.size())
-				theDataDef.disable();
 			break;
 			
 		case CalibrationStep.CLEARPOINTS:
@@ -190,25 +193,43 @@ public class ApplyCalibration extends AnalysisFunction {
 		AnalysisData adIn = ev.getAnalysisData();
 		AnalysisData adSel =  getSelectedData(adIn);
 		
-		// if adIn is simple
-		// If selected data is not available, just pass the rest.
+		// If selected data is not available, just exit
 		if (adSel == null){
 			return;
 		}
-		
+
+		AnalysisData adInClone;
+		try {
+			adInClone = (AnalysisData) adIn.clone();
+		} 
+		catch (Exception e) {
+			setError("Unable to clone incoming event data EVENT="+ev);
+			return;
+		}
+		adSel =   getSelectedData(adInClone);
 		// --- SIMPLE INPUT ----- 
-		if (adSel.isSimple() && adSel.isNumeric()){
-				Double calibVal = calibrateIt(adSel.getDataAsDouble());
-				if (calibVal == null){
-					setError("Unable to apply calibration ");
-				}
-				AnalysisData adCalib = new AnalysisData(c_MetricLabel, calibVal);
-				if (c_MetricUnit != null)
-					adCalib.setUnits(c_MetricUnit);
-				
-				publishDerivedEvent(ev, adCalib );
+		processCalibration(adSel);
+		publishDerivedEvent(ev, adInClone );
+	}
+	private void processCalibration(AnalysisData ad){
+
+		Double calibVal = calibrateIt(ad.getDataAsDouble());
+		if (calibVal == null){
+			setError("Unable to perform data conversion, event dropped for DATA="+ad.getLabel());
+			return;
 		}
 		
+		AnalysisData adParent = ad.getParent();
+		if (!c_RetainBoth.booleanValue() || adParent == null || adParent.isSimple()){ // If not retaining the old just overwrite
+			ad.setData(calibVal);
+			ad.setLabel(c_MetricLabel);
+			ad.setUnits(c_MetricUnit);
+		}
+		else {							// If retaining the add new value ad this one with suffix of units.
+			AnalysisData adNew = new AnalysisData(c_MetricLabel, calibVal);
+			adNew.setUnits(c_MetricUnit);
+			((AnalysisCompoundData) adParent).addAnalysisData(adNew);
+		}
 	}
 	private Double calibrateIt(Double val){
 		

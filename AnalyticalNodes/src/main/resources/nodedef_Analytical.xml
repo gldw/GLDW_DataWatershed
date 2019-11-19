@@ -11,13 +11,7 @@
 	    <attr name="EditOrder" type="Integer">2</attr>
 		<attr name="Category">Required</attr>
 	</datadef>
-	<datadef name="CalibrationApproach">
-		<attr name="EditOrder" type="Integer">3</attr>
-		<attr name="RefreshOnChange" type="Boolean">true</attr>
-		<attr name="Category">Required</attr>
-		<attr name="Enum">CalibrationApproach</attr>
-		<attr name="Desc">The approach that will be used for the calibration.</attr>
-	</datadef>
+
 	<datadef name="MetricLabel">
 		<attr name="EditOrder" type="Integer">11</attr>
 		<attr name="Category">Standard</attr>
@@ -28,6 +22,18 @@
 		<attr name="Enum">MeasurementUnit</attr>
 		<attr name="Category">Standard</attr>
 		<attr name="Desc">Metric unit type for the calibrated metric.</attr>
+	</datadef>
+	<datadef name="RetainRawValue">
+		<attr name="EditOrder" type="Integer">13</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">If set retains the original raw data value.</attr>
+	</datadef>
+	<datadef name="CalibrationApproach">
+		<attr name="EditOrder" type="Integer">1</attr>
+		<attr name="RefreshOnChange" type="Boolean">true</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Enum">CalibrationApproach</attr>
+		<attr name="Desc">The approach that will be used for the calibration.</attr>
 	</datadef>
 	<datadef name="Slope">
 		<attr name="EditOrder" type="Integer">31</attr>
@@ -49,12 +55,12 @@
 	<datadef name="AddRawValue">
 		<attr name="EditOrder" type="Integer">22</attr>
 		<attr name="Category">Required</attr>
-		<attr name="Desc">The raw value  </attr>	
+		<attr name="Desc">The raw value in any units. </attr>	
 	</datadef>
 	<datadef name="AddCalibratedValue">
 		<attr name="EditOrder" type="Integer">23</attr>
 		<attr name="Category">Required</attr>
-		<attr name="Desc">The calibrated value.</attr>		
+		<attr name="Desc">The calibrated value in the desired units</attr>		
 		<attr name="RefreshOnChange" type="Boolean">true</attr>
 	</datadef>
 	<datadef name="CalibrationPoints">
