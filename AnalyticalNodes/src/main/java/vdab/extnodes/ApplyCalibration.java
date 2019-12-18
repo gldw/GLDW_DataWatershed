@@ -232,16 +232,24 @@ public class ApplyCalibration extends AnalysisFunction {
 		}
 	}
 	private Double calibrateIt(Double val){
-		
+	
+		try {
 		switch (c_CalibrationApproach.intValue()){
+	
 		case CalibrationApproach.SLOPEINTERCEPT:
-			Double retVal = (val * c_Slope) - c_Intercept;
+			Double retVal = (val.doubleValue() - c_Intercept.doubleValue())/ c_Slope.doubleValue();
 			return retVal;
 		default:
 			setError("Currently only slope intercept calibration is supported");
 			return null;
 		
 		}
+		}
+		catch (Exception e){
+			setError("Unable to apply calibration e>"+e);
+			
+		}
+		return null;
 		
 	}
 
