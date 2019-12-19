@@ -38,12 +38,12 @@
 	<datadef name="Slope">
 		<attr name="EditOrder" type="Integer">31</attr>
 		<attr name="Category">Required</attr>
-		<attr name="Desc">The slope for linear conversions.</attr>
+		<attr name="Desc">The slope for linear conversions. This should be the Calibrated/Raw ratio.</attr>
 	</datadef>
 	<datadef name="Intercept">
 		<attr name="EditOrder" type="Integer">32</attr>
 		<attr name="Category">Required</attr>
-		<attr name="Desc">The intercept for linear conversions.</attr>
+		<attr name="Desc">The intercept for linear conversions. Thould be the intercept for the Calibrated value.</attr>
 	</datadef>
 	<datadef name="CalibrationStep">
 		<attr name="RefreshOnChange" type="Boolean">true</attr>
