@@ -237,7 +237,7 @@ public class ApplyCalibration extends AnalysisFunction {
 		switch (c_CalibrationApproach.intValue()){
 	
 		case CalibrationApproach.SLOPEINTERCEPT:
-			Double retVal = (val.doubleValue() - c_Intercept.doubleValue())/ c_Slope.doubleValue();
+			Double retVal = val.doubleValue()*c_Slope.doubleValue() + c_Intercept.doubleValue();
 			return retVal;
 		default:
 			setError("Currently only slope intercept calibration is supported");
