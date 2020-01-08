@@ -23,10 +23,16 @@
 		<attr name="RefreshOnChange" type="Boolean">true</attr>
 		<attr name="Desc">The labels to use for each channel.</attr>		
 	</datadef>
-	<datadef name="Token">
+		<datadef name="AddUnitsToLabel">
 		<attr name="EditOrder" type="Integer">23</attr>
 		<attr name="Category">Required</attr>
-		<attr name="Desc">The identifying code for the sensors to be monitored.</attr>		
+		<attr name="RefreshOnChange" type="Boolean">true</attr>
+		<attr name="Desc">If set, appends the units of the metric to its label.</attr>		
+	</datadef>
+	<datadef name="Token">
+		<attr name="EditOrder" type="Integer">24</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The access token provided by Onset.</attr>		
 	</datadef>
 	<datadef name="User">
 		<attr name="EditOrder" type="Integer">26</attr>
@@ -37,7 +43,7 @@
 		<attr name="EditOrder" type="Integer">27</attr>
 		<attr name="Category">Required</attr>
 		<attr name="SpecialType">Password</attr>
-		<attr name="Desc">The user password. (The stored value will be obfuscated.)</attr>		
+		<attr name="Desc">The Hobolink user password. (The value will no be stored in a readable format.)</attr>		
 	</datadef>
 	<datadef name="GeoLatitude">
 		<attr name="EditOrder" type="Integer">31</attr>

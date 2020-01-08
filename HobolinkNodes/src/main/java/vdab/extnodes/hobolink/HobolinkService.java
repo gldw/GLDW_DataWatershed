@@ -5,11 +5,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
@@ -20,28 +18,31 @@ import com.lcrc.af.AnalysisDataDef;
 import com.lcrc.af.AnalysisEvent;
 import com.lcrc.af.constants.HTTPMethodType;
 import com.lcrc.af.constants.SpecialText;
-import com.lcrc.af.constants.TimeUnit;
 import com.lcrc.af.util.ControlDataBuffer;
 import com.lcrc.af.util.IconUtility;
 import com.lcrc.af.util.StringUtility;
 
 import vdab.api.node.HTTPService_A;
+import vdab.core.nodes.units.MeasurementUnit;
 
 public class HobolinkService extends HTTPService_A{
 	private static String API_ENDPOINT= "https://webservice.hobolink.com/restv2";
-	private static long MAX_AGEINMINUTES = 600;
+	private static long MAX_AGEINMINUTES = 120;
 	private  DateFormat SDF_HOBOLINK = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");	
 	private String c_TimeZone ;
 	private String c_StationName ;
+	private Boolean c_AddUnitsToLabel = Boolean.FALSE;
 	
 	private String c_DataLabel = "HobolinkData" ;
 	private String c_Token;
 	private Boolean c_DropRepeatReports = Boolean.FALSE;
-	private AnalysisCompoundData c_CurrentData ;
+
 	private String c_LoggerID;
 	private String[] c_LabelsByChannel;
 	private Long  c_LastEventTime;
 	private ControlDataBuffer c_cdb_DataLabels = new ControlDataBuffer("HobolinkService_DataLabels");
+	private ControlDataBuffer c_cdb_ChannelsFound = new ControlDataBuffer("HobolinkService_ChannelsFound");
+	private ControlDataBuffer c_cdb_LabelsFound = new ControlDataBuffer("HobolinkService_LabelsFound");
 	public Integer get_IconCode(){
 		return  IconUtility.getIconHashCode("node_hobolink");
 	}
@@ -51,6 +52,14 @@ public class HobolinkService extends HTTPService_A{
 
 	public String get_LoggerID() {
 		return c_LoggerID;
+
+	}	
+	public void set_AddUnitsToLabel(Boolean add){	
+		c_AddUnitsToLabel = add;
+	}
+	
+	public Boolean get_AddUnitsToLabel() {
+		return 	c_AddUnitsToLabel;
 
 	}	
 	public void set_LoggerID(String id){	
@@ -121,6 +130,12 @@ public class HobolinkService extends HTTPService_A{
 	public void set_DropRepeatReports(Boolean drop){
 		c_DropRepeatReports = drop;
 	}
+	public String get_ChannelsFound(){
+		return c_cdb_ChannelsFound.getAllSet(",");
+	}
+	public String get_ChannelLabelsFound(){
+		return c_cdb_LabelsFound.getAllSet(",");
+	}
 	@Override
 	public void _init(){
 		super._init();
@@ -131,6 +146,11 @@ public class HobolinkService extends HTTPService_A{
 		SDF_HOBOLINK.setTimeZone(TimeZone.getTimeZone("UTC"));
 		c_LabelsByChannel = c_cdb_DataLabels.getAllSet();
 		super._start();
+	}
+	@Override
+	public void _reset(){
+		c_LastEventTime = null;
+		super._reset();
 	}
 	@Override
 	public String buildCompleteURL(AnalysisEvent ev) {
@@ -208,17 +228,25 @@ public class HobolinkService extends HTTPService_A{
 			String rawData = sb.toString();
 			String tableData = StringUtility.locateBetween(rawData,"{\"observationList\":[", "],\"message\"");
 			ArrayList<String> rowList =  StringUtility.locateAllBetween(tableData,"{\"logger_sn\":","\"scaled_unit\":");
-	
+
 			for (String row : rowList){
 				String timeStr = StringUtility.locateBetween(row, "\"timestamp\":\"","\",");
 				AnalysisCompoundData acd = getAcdFromDataMap(timeStr, dataMap);
 				if (acd == null)
 					break;
 				String chanStr = StringUtility.locateBetween(row, "\"channel_num\":",",\"");	
+				c_cdb_ChannelsFound.set(chanStr);
 				String valueStr = StringUtility.locateBetween(row, "\"si_value\":",",\"");
-				String unitStr = StringUtility.locateBetween(row, "\"si_unit\":","\",");	
-				String label = getChannelLabel(chanStr);
-				acd.addAnalysisData(new AnalysisData(label, Double.valueOf(valueStr)));
+				String unitStr = StringUtility.locateBetween(row, "\"si_unit\":\"","\",");	
+				String label = getChannelLabel(chanStr, unitStr);
+				c_cdb_LabelsFound.set(label);
+				// Drop labels that start with a "-"
+				if (label.startsWith("-"))
+					continue;
+	
+				AnalysisData adMetric = new AnalysisData(label, Double.valueOf(valueStr));
+				setUnitsOnData(adMetric, unitStr);
+				acd.addAnalysisData(adMetric);
 			}
 			
 			ArrayList<AnalysisEvent> l = new ArrayList<AnalysisEvent>();
@@ -257,17 +285,27 @@ public class HobolinkService extends HTTPService_A{
 		}
 		return acd;
 	}
-	private String getChannelLabel(String chanStr){
+	private void setUnitsOnData(AnalysisData adMetric, String unitStr){
+		Integer unitCode = MeasurementUnit.getCodeFromUnitLabel(unitStr);
+		if (unitCode != null)
+			adMetric.setUnits(unitCode);		
+	}
+	private String getChannelLabel(String chanStr, String unitStr){
+
+		StringBuilder sb = new StringBuilder();
+		String label = chanStr;
 		try {
 			int chanNo = Integer.valueOf(chanStr)-1;
-			if (chanNo >= 0 && chanNo < c_LabelsByChannel.length)
-				return c_LabelsByChannel[chanNo];
+			if (chanNo >= 0 && chanNo < c_LabelsByChannel.length){
+				String newLabel = c_LabelsByChannel[chanNo];
+				if (newLabel != null)
+					return label = newLabel;
+			}
 		}
 		catch(Exception e){}
-		return null;
-		
+		sb.append(label);
+		if (c_AddUnitsToLabel.booleanValue())
+			sb.append("(").append(unitStr).append(")");
+		return sb.toString();
 	}
-
-
-
 }
