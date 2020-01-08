@@ -9,7 +9,7 @@ dependencies {
     compile files('build/vdab/VDABCore.jar' )
  }
  
- //Get dependencies from Maven central repository
+// Get dependencies from Maven central repository
 repositories {
     mavenCentral()
 }
