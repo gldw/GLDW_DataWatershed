@@ -12,51 +12,69 @@
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The name of the Hobolink station.</attr>		
 	</datadef>
+	<datadef name="UnitSystem">
+		<attr name="EditOrder" type="Integer">21</attr>
+		<attr name="Enum">MeasurementSystem</attr>
+		<attr name="EditWhileRunning" type="Boolean">true</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">Select either the Metric or Imperial measurement units.</attr>		
+	</datadef>
 	<datadef name="LoggerID">
 		<attr name="EditOrder" type="Integer">22</attr>
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The code (serial number) for the logger to be monitored.</attr>		
 	</datadef>
 	<datadef name="MetricLabels">
-		<attr name="EditOrder" type="Integer">21</attr>
+		<attr name="EditOrder" type="Integer">23</attr>
 		<attr name="Category">Required</attr>
 		<attr name="RefreshOnChange" type="Boolean">true</attr>
 		<attr name="Desc">The labels to use for each channel.</attr>		
 	</datadef>
-		<datadef name="AddUnitsToLabel">
-		<attr name="EditOrder" type="Integer">23</attr>
-		<attr name="Category">Required</attr>
+	<datadef name="DropSensorNumber">
+		<attr name="EditOrder" type="Integer">24</attr>
+		<attr name="Category">Standard</attr>
+		<attr name="EditWhileRunning" type="Boolean">true</attr>
 		<attr name="RefreshOnChange" type="Boolean">true</attr>
+		<attr name="Desc">Exclude these sensor numbers from the published data</attr>		
+	</datadef>
+	<datadef name="MaxDataAge">
+		<attr name="EditOrder" type="Integer">25</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">The maximum age in minutes of the data that will be returned.</attr>		
+	</datadef>
+	<datadef name="AddUnitsToLabel">
+		<attr name="EditOrder" type="Integer">60</attr>
+		<attr name="Category">Advanced</attr>
 		<attr name="Desc">If set, appends the units of the metric to its label.</attr>		
 	</datadef>
 	<datadef name="Token">
-		<attr name="EditOrder" type="Integer">24</attr>
+		<attr name="EditOrder" type="Integer">31</attr>
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The access token provided by Onset.</attr>		
 	</datadef>
 	<datadef name="User">
-		<attr name="EditOrder" type="Integer">26</attr>
+		<attr name="EditOrder" type="Integer">32</attr>
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The Hobolink user name</attr>				
 	</datadef>
     <datadef  name="Password">
-		<attr name="EditOrder" type="Integer">27</attr>
+		<attr name="EditOrder" type="Integer">33</attr>
 		<attr name="Category">Required</attr>
 		<attr name="SpecialType">Password</attr>
 		<attr name="Desc">The Hobolink user password. (The value will no be stored in a readable format.)</attr>		
 	</datadef>
 	<datadef name="GeoLatitude">
-		<attr name="EditOrder" type="Integer">31</attr>
+		<attr name="EditOrder" type="Integer">41</attr>
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The latitude of the logging station.</attr>		
 	</datadef>
 	<datadef name="GeoLongitude">
-		<attr name="EditOrder" type="Integer">32</attr>
+		<attr name="EditOrder" type="Integer">42</attr>
 		<attr name="Category">Required</attr>
 		<attr name="Desc">The longitude of the logging station.</attr>		
 	</datadef>
 	<datadef name="GeoAltitude">
-		<attr name="EditOrder" type="Integer">33</attr>
+		<attr name="EditOrder" type="Integer">43</attr>
 		<attr name="Category">Standard</attr>
 		<attr name="Desc">The altitude of the logging station.</attr>		
 	</datadef>

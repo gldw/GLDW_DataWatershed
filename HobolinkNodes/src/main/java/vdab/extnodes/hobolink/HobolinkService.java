@@ -17,32 +17,38 @@ import com.lcrc.af.AnalysisData;
 import com.lcrc.af.AnalysisDataDef;
 import com.lcrc.af.AnalysisEvent;
 import com.lcrc.af.constants.HTTPMethodType;
+import com.lcrc.af.constants.MeasurementSystem;
+import com.lcrc.af.constants.MeasurementUnit;
 import com.lcrc.af.constants.SpecialText;
 import com.lcrc.af.util.ControlDataBuffer;
 import com.lcrc.af.util.IconUtility;
 import com.lcrc.af.util.StringUtility;
 
 import vdab.api.node.HTTPService_A;
-import vdab.core.nodes.units.MeasurementUnit;
 
 public class HobolinkService extends HTTPService_A{
+	static {
+		MeasurementSystem.getEnum();
+	}
 	private static String API_ENDPOINT= "https://webservice.hobolink.com/restv2";
-	private static long MAX_AGEINMINUTES = 120;
+	private static Long DEFAULT_MAX_DATAAGE = Long.valueOf(45);
 	private  DateFormat SDF_HOBOLINK = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");	
 	private String c_TimeZone ;
 	private String c_StationName ;
 	private Boolean c_AddUnitsToLabel = Boolean.FALSE;
+	private Integer c_UnitSystem = Integer.valueOf(MeasurementSystem.METRIC);
 	
 	private String c_DataLabel = "HobolinkData" ;
 	private String c_Token;
-	private Boolean c_DropRepeatReports = Boolean.FALSE;
-
 	private String c_LoggerID;
 	private String[] c_LabelsByChannel;
 	private Long  c_LastEventTime;
+	private Long  c_MaxDataAge = DEFAULT_MAX_DATAAGE ;
+	private ControlDataBuffer c_cdb_DropSensorNumbers = new ControlDataBuffer("HobolinkService_DropSensorNumbers");
 	private ControlDataBuffer c_cdb_DataLabels = new ControlDataBuffer("HobolinkService_DataLabels");
 	private ControlDataBuffer c_cdb_ChannelsFound = new ControlDataBuffer("HobolinkService_ChannelsFound");
 	private ControlDataBuffer c_cdb_LabelsFound = new ControlDataBuffer("HobolinkService_LabelsFound");
+	private ControlDataBuffer c_cdb_AvailableSensors= new ControlDataBuffer("HobolinkService_AvailableSensors");
 	public Integer get_IconCode(){
 		return  IconUtility.getIconHashCode("node_hobolink");
 	}
@@ -53,7 +59,8 @@ public class HobolinkService extends HTTPService_A{
 	public String get_LoggerID() {
 		return c_LoggerID;
 
-	}	
+	}
+	// Hiding this feature for now.
 	public void set_AddUnitsToLabel(Boolean add){	
 		c_AddUnitsToLabel = add;
 	}
@@ -62,19 +69,21 @@ public class HobolinkService extends HTTPService_A{
 		return 	c_AddUnitsToLabel;
 
 	}	
+	public void set_UnitSystem(Integer system){
+		c_UnitSystem = system;
+	}
+	public Integer get_UnitSystem(){
+		return c_UnitSystem;
+	}
+	public void set_MaxDataAge(Long age){
+		c_MaxDataAge = age;
+	}
+	public Long get_MaxDataAge(){
+		return c_MaxDataAge;
+	}
 	public void set_LoggerID(String id){	
 		c_LoggerID = id;
 	}
-	
-	private String checkSensorDigits(String id){
-		String digits = StringUtility.digitsOnly(id);
-		if (digits.length() > 8 || digits.length() < 6){
-			setError("ParamID must be a 8 digit number ID_ENTERED="+id);
-			return null;
-		}
-		return digits;
-	}
-
 	public String get_MetricLabels() {
 		if(c_cdb_DataLabels.isEmpty())
 			return null;
@@ -83,7 +92,6 @@ public class HobolinkService extends HTTPService_A{
 	public void set_MetricLabels(String labels){	
 
 		if (labels.contains(",")){
-			String[] allLabels = labels.split(",");
 			c_cdb_DataLabels.setAll(labels,","); 			
 		} 
 		// Clear command from option picker
@@ -106,6 +114,39 @@ public class HobolinkService extends HTTPService_A{
 		theDataDef.setAllPickValues(l.toArray(new String[l.size()]));
 		return theDataDef;
 	}
+	public String get_DropSensorNumber() {
+		if(c_cdb_DropSensorNumbers.isEmpty())
+			return null;
+		return c_cdb_DropSensorNumbers.getAllSet(","); 
+	}	
+	public void set_DropSensorNumber(String numbers){	
+
+		if (numbers.contains(",")){
+			c_cdb_DropSensorNumbers.setAll(numbers,","); 			
+		} 
+		// Clear command from option picker
+		else if (numbers.equals(SpecialText.CLEAR)){
+			c_cdb_DropSensorNumbers.clear();
+			return;
+		}
+		else {
+			// One value to add.
+			if (!c_cdb_DropSensorNumbers.isSet(numbers)){
+				c_cdb_DropSensorNumbers.set(numbers);
+			}
+		}
+	}
+	public AnalysisDataDef def_DropSensorNumber(AnalysisDataDef theDataDef){
+		ArrayList<String> l = new ArrayList<String>();
+		if (!c_cdb_DropSensorNumbers.isEmpty())
+			l.add(SpecialText.CLEAR);
+		for (String sensorNo: c_cdb_AvailableSensors.getAllSet()){
+			if (!c_cdb_DropSensorNumbers.isSet(sensorNo))
+				l.add(sensorNo);
+		}
+		theDataDef.setAllPickValues(l.toArray(new String[l.size()]));
+		return theDataDef;
+	}
 	public void set_Token(String token){
 		 c_Token = token;
 	}
@@ -124,17 +165,15 @@ public class HobolinkService extends HTTPService_A{
 	public String get_DataLabel(){
 		return  c_DataLabel;
 	}
-	public Boolean get_DropRepeatReports(){
-		return c_DropRepeatReports;
-	}
-	public void set_DropRepeatReports(Boolean drop){
-		c_DropRepeatReports = drop;
-	}
-	public String get_ChannelsFound(){
+
+	public String get_SensosChannels(){
 		return c_cdb_ChannelsFound.getAllSet(",");
 	}
-	public String get_ChannelLabelsFound(){
+	public String get_SensorLabels(){
 		return c_cdb_LabelsFound.getAllSet(",");
+	}
+	public String get_SensorNumbers(){
+		return c_cdb_AvailableSensors.getAllSet(",");
 	}
 	@Override
 	public void _init(){
@@ -172,7 +211,7 @@ public class HobolinkService extends HTTPService_A{
 	public String buildPost(AnalysisEvent ev){
 		
 		long endTime = System.currentTimeMillis();
-		long startTime = endTime - MAX_AGEINMINUTES*60000L; 
+		long startTime = endTime - c_MaxDataAge.longValue()*60000L; 
 			
 		StringBuilder sb = new StringBuilder();
 		sb.append("\n{");
@@ -236,8 +275,21 @@ public class HobolinkService extends HTTPService_A{
 					break;
 				String chanStr = StringUtility.locateBetween(row, "\"channel_num\":",",\"");	
 				c_cdb_ChannelsFound.set(chanStr);
-				String valueStr = StringUtility.locateBetween(row, "\"si_value\":",",\"");
-				String unitStr = StringUtility.locateBetween(row, "\"si_unit\":\"","\",");	
+				String serialStr = StringUtility.locateBetween(row, "\"sensor_sn\":\"","\",\"");
+				if (c_cdb_DropSensorNumbers.isSet(serialStr))
+					continue;
+				c_cdb_AvailableSensors.set(serialStr);
+				String valueStr = null;
+				String unitStr = null;
+				if (c_UnitSystem.intValue() == MeasurementSystem.IMPERIAL){
+					valueStr = StringUtility.locateBetween(row, "\"us_value\":",",\"");
+					unitStr = StringUtility.locateBetween(row, "\"us_unit\":\"","\",");	
+				}
+				else {
+					valueStr = StringUtility.locateBetween(row, "\"si_value\":",",\"");
+					unitStr = StringUtility.locateBetween(row, "\"si_unit\":\"","\",");					
+				}
+				unitStr = cleanTextContent(unitStr);
 				String label = getChannelLabel(chanStr, unitStr);
 				c_cdb_LabelsFound.set(label);
 				// Drop labels that start with a "-"
@@ -252,8 +304,15 @@ public class HobolinkService extends HTTPService_A{
 			ArrayList<AnalysisEvent> l = new ArrayList<AnalysisEvent>();
 			for (Map.Entry<Long, AnalysisCompoundData> entry: dataMap.entrySet()){
 				long ts = entry.getKey().longValue();
+				AnalysisCompoundData acd = entry.getValue();
+				AnalysisData[] ads = acd.getAllSimpleNumerics();
+				// Sanity check for incomplete data.
+				if (ads.length <= c_LabelsByChannel.length/2){
+					setWarning("Received less than the expected amount of data, dropping for TIME="+ts);
+					continue;
+				}
 				if (c_LastEventTime == null || ts > c_LastEventTime.longValue()){
-					l.add(new AnalysisEvent(ts, this, entry.getValue()));
+					l.add(new AnalysisEvent(ts, this, acd));
 					c_LastEventTime = Long.valueOf(ts);
 				}
 			}
@@ -292,20 +351,36 @@ public class HobolinkService extends HTTPService_A{
 	}
 	private String getChannelLabel(String chanStr, String unitStr){
 
-		StringBuilder sb = new StringBuilder();
 		String label = chanStr;
 		try {
 			int chanNo = Integer.valueOf(chanStr)-1;
 			if (chanNo >= 0 && chanNo < c_LabelsByChannel.length){
 				String newLabel = c_LabelsByChannel[chanNo];
 				if (newLabel != null)
-					return label = newLabel;
+					label = newLabel;
 			}
 		}
 		catch(Exception e){}
+		StringBuilder sb = new StringBuilder();
 		sb.append(label);
 		if (c_AddUnitsToLabel.booleanValue())
 			sb.append("(").append(unitStr).append(")");
 		return sb.toString();
+	}
+	private static String cleanTextContent(String text) 
+	{
+		
+		text.replaceAll("Â","");
+		/**
+	    // strips off all non-ASCII characters
+	    text = text.replaceAll("[^\\x00-\\x7F]", "");
+	 
+	    // erases all the ASCII control characters
+	    text = text.replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "");
+	     
+	    // removes non-printable characters from Unicode
+	    text = text.replaceAll("\\p{C}", "");
+	 **/
+	    return text.trim();
 	}
 }
