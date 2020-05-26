@@ -184,11 +184,15 @@ public class WQDataService extends HTTPService_A{
 	public void processReturnStream(AnalysisEvent inEvent, int retCode, InputStream is) {
 		BufferedReader in = new BufferedReader(new InputStreamReader(is));
 		String line;
+		String rawData;
 		StringBuilder sb = new StringBuilder();
 		try {
 			while ((line = in.readLine()) != null)
 				sb.append(line);	
-			String rawData = sb.toString();
+			rawData = sb.toString();
+			if (isTraceLogging())
+				this.logTrace("RAWDATA="+rawData);
+			
 			// Find timezone first time.
 			if (c_TimeZone == null){
 				String tzone = StringUtility.locateBetween(rawData,"\"timezone\":\"", "\"");
@@ -276,10 +280,16 @@ public class WQDataService extends HTTPService_A{
 
 	@Override
 	public void serviceFailed(AnalysisEvent inEv, int code){
-		if (c_ActiveIDQueue.isEmpty())
-			super.serviceFailed(inEv, code);
-		else
-			setWarning("Service failed processing parameter, continuing with others, PARAMID="+c_LastParamID);
+		setWarning("Service failed processing parameter, continuing with others, PARAMID="+c_LastParamID);
+		if (c_ActiveIDQueue.isEmpty()) {
+			if (c_CurrentEvent != null)
+				serviceResponse(inEv, c_CurrentEvent);
+			else  
+				super.serviceFailed(inEv, code);
+		}
+		else {
+				this.processNextParamID();
+		}
 	}
 
 }
