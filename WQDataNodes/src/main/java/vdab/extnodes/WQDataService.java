@@ -24,7 +24,7 @@ import vdab.api.node.HTTPService_A;
 import vdab.core.nodes.http.ServiceHandler_HTTP;
 
 public class WQDataService extends HTTPService_A{
-	private static String API_ENDPOINT= "https://v2.wqdatalive.com/public/";
+	private static String API_ENDPOINT= "https://www.wqdatalive.com/public/";
 	private  DateFormat c_WQDateFormat = new SimpleDateFormat("MM-dd-yyyy HH:mm:ss");	
 	private Integer c_ProjectCode;
 	private String c_TimeZone ;
