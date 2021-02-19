@@ -16,6 +16,7 @@ import com.lcrc.af.AnalysisData;
 import com.lcrc.af.AnalysisDataDef;
 import com.lcrc.af.AnalysisEvent;
 import com.lcrc.af.constants.GeoUnits;
+import com.lcrc.af.constants.MeasurementUnit;
 import com.lcrc.af.constants.SpecialText;
 import com.lcrc.af.util.ControlDataBuffer;
 import com.lcrc.af.util.IconUtility;
@@ -24,7 +25,6 @@ import com.lcrc.af.util.StringUtility;
 import vdab.api.node.HTTPService_A;
 
 import vdab.core.dataencode.JsonUtility;
-import vdab.core.nodes.units.MeasurementUnit;
 import vdab.core.nodes.units.UnitAdder;
 
 
@@ -34,11 +34,10 @@ public class USGSWaterWatchService  extends HTTPService_A{
 	private String c_HUCodeMatch;
 	private String c_RegionCode;
 	private Integer c_DataNamingApproach;
-	private Boolean c_DropRepeatReports = Boolean.TRUE;
+
 	DateFormat c_WWDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");	
 	String c_WWLastTZ = "";
 	private ControlDataBuffer c_cdb_AvailableOriginalFields = new ControlDataBuffer("AvailableOriginalFields",new String[]{"tz_cd","dec_lat_va","station_nm","stage_dt","flow_unit","class","dec_long_va","url","site_no","percentile","stage","percent_median","flow_dt","stage_unit","huc_cd","percent_mean","flow"});
-	private ControlDataBuffer c_cdb_AvailableEnhancedFields= new ControlDataBuffer("AvailableEnhancedFields");
 	private ControlDataBuffer c_cdb_AvailableFields = c_cdb_AvailableOriginalFields;
 	private ControlDataBuffer c_cdb_SelectedFields = new ControlDataBuffer("USGSSelectedFields",new String[]{"stage","flow","percentile"});
 	private static String SITES_START= "{\"sites\":[";
@@ -70,12 +69,7 @@ public class USGSWaterWatchService  extends HTTPService_A{
 	public void set_DataNamingApproach(Integer type){
 		c_DataNamingApproach = type;
 	}
-	public Boolean get_DropRepeatReports(){
-		return c_DropRepeatReports;
-	}
-	public void set_DropRepeatReports(Boolean drop){
-		c_DropRepeatReports = drop;
-	}
+
 	public String get_SelectedFields() {
 		if(c_cdb_SelectedFields.isEmpty())
 			return null;
@@ -108,6 +102,10 @@ public class USGSWaterWatchService  extends HTTPService_A{
 		}
 		theDataDef.setAllPickValues(l.toArray(new String[l.size()]));
 		return theDataDef;
+	}
+	public void _reset(){
+		c_LastRecord_map.clear();
+		super._reset();
 	}
 	
 	public String buildCompleteURL(AnalysisEvent ev) {
@@ -233,7 +231,7 @@ public class USGSWaterWatchService  extends HTTPService_A{
 
 		int failedCount = 0;
 		for(String locJson: locJsonList){
-			if (c_DropRepeatReports.booleanValue() && !hasChanged(locJson))
+			if ( !hasChanged(locJson))
 				continue;
 			String huc = StringUtility.locateBetween(locJson, HUC_CODE_START ,"\",");
 			if (huc == null){
