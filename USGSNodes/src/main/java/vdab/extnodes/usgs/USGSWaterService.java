@@ -85,7 +85,9 @@ public class USGSWaterService  extends HTTPService_A{
 	.addUnit("00011",MeasurementUnit.TEMP_DEG_FAHRENHEIT)
 	.addUnit("00065",MeasurementUnit.DISTANCE_FEET)
 	.addUnit("00060",MeasurementUnit.FLOW_FEET3_SEC)
-
+	.addUnit("00095",MeasurementUnit.CONDUCTIVITY_US_CM)
+	.addUnit("63680",MeasurementUnit.TURBIDITY_FNU)
+	.addUnit("70969",MeasurementUnit.VOLTAGE)
 	;
 	public Integer get_IconCode(){
 		return  IconUtility.getIconHashCode("node_usgs");
