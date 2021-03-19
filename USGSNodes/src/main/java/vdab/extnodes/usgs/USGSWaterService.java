@@ -39,6 +39,11 @@ public class USGSWaterService  extends HTTPService_A{
 	private String c_RegionCode;
 	private String c_DataLabel = "USGSData";
 	private Integer c_RetrieveType = EventRetrieveType.LATESTONLY;
+	// ================  DEBUG Properties
+	private String c_TimeZoneForParse ;
+	public String get_TimeZoneForParse(){
+		return c_TimeZoneForParse;
+	}
 
 	/*
 		00010     Temperature, water, degrees Celsius
@@ -305,8 +310,18 @@ public class USGSWaterService  extends HTTPService_A{
 			for (String dataLine: c_DataLines){
 				String[] dataFields = dataLine.split("\t",-1);
 				try {
-					c_DateFormat.setTimeZone(TimeZone.getTimeZone(dataFields[3]));
+					String inZone = dataFields[3];
+					boolean dst = false;
+					if (inZone.indexOf("DT") > 0){ // HACKALERT: Convert EDT,CDT,MDT and PDT to EST,CST,MST and PST
+						dst = true;
+						inZone = inZone.substring(0,1) + "ST";;
+					}
+					TimeZone tz = TimeZone.getTimeZone(inZone);
+					c_TimeZoneForParse = tz.getDisplayName();
+					c_DateFormat.setTimeZone(tz);					
 					long metricTime= c_DateFormat.parse(dataFields[2]).getTime();
+					if (dst) // HACKALERT
+						metricTime -= 3600000L; // 				
 					if (metricTime > maxTime)
 						maxTime = metricTime;
 				} catch (ParseException e) {
