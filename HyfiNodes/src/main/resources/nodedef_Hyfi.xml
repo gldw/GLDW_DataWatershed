@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<nodedefs>
+<nodedef name="HyfiService" class="vdab.extnodes.hyfi.HyfiService">
+	<attr name="Group">Data</attr>
+	<attr name="ConsumedEventTypes">Trigger,Event</attr>
+    <attr name="PublishedEventTypes">Event</attr>
+    <attr name="NodeOverview">Retrieves data from a Hyfi device.</attr>   
+    <attr name="NodeDescTemplate"> site-${SiteCode}</attr>
+	<attr name="NodeQuality" >Beta</attr>  
+	<datadef name="APIKey">
+	 	<attr name="EditOrder" type="Integer">18</attr>
+		<attr name="Desc">Enter the API Key you were assigned by Hyfi</attr> 	
+   		<attr name="Category">Required</attr>
+	</datadef>
+	<datadef name="RetrieveType">
+	 	<attr name="EditOrder" type="Integer">21</attr>
+        <attr name="RefreshOnChange" type="Boolean">true</attr>
+        <attr name="Enum">EventRetrieveType</attr>
+		<attr name="Desc">Pick the type of retrieve to perform. Currently only LATEST is supported.</attr> 	
+   		<attr name="Category">Hidden</attr>
+	</datadef>
+	<datadef name="SiteCode">
+		<attr name="EditOrder" type="Integer">23</attr>
+		<attr name="EditWhileRunning" type="Boolean">true</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">Enter the assigned Hyfi site code. Set to *ALL* to get from all sites.</attr>		
+	</datadef>
+	<datadef name="SelectedFields">
+		<attr name="EditOrder" type="Integer">24</attr>
+		<attr name="Category">Required</attr>
+		<attr name="EditWhileRunning" type="Boolean">true</attr>
+		<attr name="RefreshOnChange" type="Boolean">true</attr>		
+		<attr name="Desc">Select the fields that should be reported.</attr>		
+	</datadef>
+	<datadef name="DataLabel">
+		<attr name="EditOrder" type="Integer">26</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">Sets the label for the Dataset.</attr>		
+	</datadef>
+</nodedef>
+</nodedefs>
