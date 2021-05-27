@@ -41,6 +41,8 @@ public class HyfiService  extends HTTPService_A{
 	private static DateFormat START_SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601 time
 	private final static long START_OFFSET = 7200000L;
 	private final static String ALLSITES = "*ALL*";
+	private final static String[] ENHANCED_FIELD_LABELS = new String[]{null,null,"region","agency","watershed"};
+	
 	private LinkedList<String> c_ActiveSiteQueue= new LinkedList<String>();
 
 	private static UnitAdder s_UnitAdder = new UnitAdder()
@@ -55,6 +57,9 @@ public class HyfiService  extends HTTPService_A{
 	
 	private ControlDataBuffer c_cdb_AvailableFields = new ControlDataBuffer("HyfiAvailableFields",new String[]{"depth","stage"});
 	private ControlDataBuffer c_cdb_SelectedFields = new ControlDataBuffer("HyfiSelectedFields",new String[]{"depth","stage"});
+	private ControlDataBuffer c_cdb_AvailableEnhancedFields = new ControlDataBuffer("HyfiEnhancedFields",new String[]{"region","reporting_agency","watershed"});
+	private ControlDataBuffer c_cdb_EnhancedFields = new ControlDataBuffer("HyfiEnhancedFields",new String[]{"region","reporting_agency","watershed"});
+
 	private ConcurrentHashMap<String,Hyfi_Site> c_HyfiSites ;
 	private static ConcurrentHashMap<String, ConcurrentHashMap<String,Hyfi_Site>> s_map_HyfiSiteGroupsByKey = new ConcurrentHashMap<String, ConcurrentHashMap<String,Hyfi_Site>>();
 
@@ -117,6 +122,38 @@ public class HyfiService  extends HTTPService_A{
 			l.add(SpecialText.CLEAR);
 		for (String label: c_cdb_AvailableFields.getAllSet()){
 			if  (!c_cdb_SelectedFields.isSet(label))
+				l.add(label);
+		}
+		theDataDef.setAllPickValues(l.toArray(new String[l.size()]));
+		return theDataDef;
+	}
+	public String get_EnhancedFields() {
+		if(c_cdb_EnhancedFields.isEmpty())
+			return null;
+		return c_cdb_EnhancedFields.getAllSet(","); 
+	}	
+	public void set_EnhancedFields(String fields){
+
+		// Multitple attributes, probably read from xml
+		if (fields.contains(",")){
+			c_cdb_EnhancedFields.setAll(fields,","); 			
+		} 
+		// Clear command from option picker
+		else if (fields.equals(SpecialText.CLEAR)){
+			c_cdb_EnhancedFields.clear();
+			return;
+		}
+		else {
+			// One value to add.
+			c_cdb_EnhancedFields.set(fields);
+		}
+	}
+	public AnalysisDataDef def_EnhancedFields(AnalysisDataDef theDataDef){
+		ArrayList<String> l = new ArrayList<String>();
+		if (!c_cdb_EnhancedFields.isEmpty())
+			l.add(SpecialText.CLEAR);
+		for (String label: c_cdb_AvailableEnhancedFields.getAllSet()){
+			if  (!c_cdb_EnhancedFields.isSet(label))
 				l.add(label);
 		}
 		theDataDef.setAllPickValues(l.toArray(new String[l.size()]));
@@ -282,6 +319,13 @@ public void processReturnStreamForErrors(AnalysisEvent inEvent, int retCode, Str
 			s_UnitAdder.addUnitForData(ad.getLabel(), ad); // Add unit info if available
 			acd.addAnalysisData(ad);		
 		}
+		
+		// Add extended information
+		for (int n=2; n < ENHANCED_FIELD_LABELS.length ; n++){
+			if (site.getField(n) != null && ENHANCED_FIELD_LABELS[n] != null && c_cdb_EnhancedFields.isSet(ENHANCED_FIELD_LABELS[n]))
+				acd.addAnalysisData(new AnalysisData(ENHANCED_FIELD_LABELS[n], site.getField(n)));
+		}
+		
 		long ts = System.currentTimeMillis();
 		Date date;
 		try {
@@ -318,7 +362,7 @@ public void processReturnStreamForErrors(AnalysisEvent inEvent, int retCode, Str
 	private class Hyfi_Site {
 		private String c_StationName;
 
-		private String c_SiteType;
+		private String[] c_Fields;
 		private Double c_Latitude;
 		private Double c_Longitude;
 		private Double c_Altitude;
@@ -326,6 +370,7 @@ public void processReturnStreamForErrors(AnalysisEvent inEvent, int retCode, Str
 		private long c_LatestReport;
 	
 		public Hyfi_Site(String apiKey, String[] fields){
+			c_Fields = fields;
 			c_SiteCode = fields[0];
 			c_StationName = fields[1];
 
@@ -337,6 +382,11 @@ public void processReturnStreamForErrors(AnalysisEvent inEvent, int retCode, Str
 			catch (Exception e){}
 			ConcurrentHashMap<String,Hyfi_Site> hyfiSites = s_map_HyfiSiteGroupsByKey.get(apiKey);
 			hyfiSites.put(c_SiteCode, this);				
+		}
+		public String getField(int no){
+			if (no >= 0 && no < c_Fields.length)
+				return c_Fields[no];
+			return null;
 		}
 		public Double getLatitude(){
 			return c_Latitude;
@@ -353,9 +403,7 @@ public void processReturnStreamForErrors(AnalysisEvent inEvent, int retCode, Str
 		public String getPath(){
 			return getStationName().replace(" ","").replace("\t","");
 		}
-		public String getSiteType(){
-			return c_SiteType;
-		}
+
 		public boolean isNewerData(long ts){
 			return ts > c_LatestReport;
 		}

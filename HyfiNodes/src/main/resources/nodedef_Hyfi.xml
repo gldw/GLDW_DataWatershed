@@ -27,15 +27,23 @@
 	</datadef>
 	<datadef name="SelectedFields">
 		<attr name="EditOrder" type="Integer">24</attr>
+		<attr name="RefreshOnChange" type="Boolean">true</attr>
 		<attr name="Category">Required</attr>
-		<attr name="EditWhileRunning" type="Boolean">true</attr>
-		<attr name="RefreshOnChange" type="Boolean">true</attr>		
-		<attr name="Desc">Select the fields that should be reported.</attr>		
+		<attr name="Desc">Select the data fields that should be reported.</attr>		
+	</datadef>
+	<datadef name="EnhancedFields">
+		<attr name="EditOrder" type="Integer">25</attr>
+	    <attr name="RefreshOnChange" type="Boolean">true</attr>
+		<attr name="Category">Required</attr>
+		<attr name="Desc">Select the site information fields that should be reported.</attr>		
 	</datadef>
 	<datadef name="DataLabel">
 		<attr name="EditOrder" type="Integer">26</attr>
 		<attr name="Category">Required</attr>
 		<attr name="Desc">Sets the label for the Dataset.</attr>		
+	</datadef>
+		<datadef name="OutputType">
+			<attr name="Category">Hidden</attr>	
 	</datadef>
 </nodedef>
 </nodedefs>
