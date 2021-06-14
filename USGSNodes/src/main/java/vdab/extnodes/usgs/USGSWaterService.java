@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.lcrc.af.AnalysisCompoundData;
 import com.lcrc.af.AnalysisData;
@@ -35,10 +36,11 @@ import vdab.core.nodes.units.UnitAdder;
 public class USGSWaterService  extends HTTPService_A{
 	// https://waterwatch.usgs.gov/webservices/realtime?region=oh&format=json
 	private static String API_ENDPOINT= "https://waterservices.usgs.gov/nwis/iv/?format=rdb&siteStatus=active";
+	private static long OLDEST_VALID_DATAAGE = 3600000L*4L; //Data must be in last 4 hours
 	private String c_HUCodeMatch;
 	private String c_RegionCode;
 	private String c_DataLabel = "USGSData";
-	private Integer c_RetrieveType = EventRetrieveType.LATESTONLY;
+	private Integer c_RetrieveType = Integer.valueOf(EventRetrieveType.LATESTONLY);
 	// ================  DEBUG Properties
 	private String c_TimeZoneForParse ;
 	public String get_TimeZoneForParse(){
@@ -300,10 +302,38 @@ public class USGSWaterService  extends HTTPService_A{
 				if (dataFields.length == c_HeaderFields.length)
 					l.add(c_SiteLines[n]);
 			}
+		
 			c_DataLines = l.toArray(new String[l.size()]);	
+			removeOldData();
 		}
 		public String getSiteNo(){
 			return c_SiteNo;
+		}
+		public void removeOldData(){
+			ArrayList<String> l = new ArrayList<String>();
+			long agedTS = System.currentTimeMillis()-OLDEST_VALID_DATAAGE;  
+			for (String dataLine: c_DataLines){
+				String[] dataFields = dataLine.split("\t",-1);
+				try {
+					String inZone = dataFields[3];
+					boolean dst = false;
+					if (inZone.indexOf("DT") > 0){ // HACKALERT: Convert EDT,CDT,MDT and PDT to EST,CST,MST and PST
+						dst = true;
+						inZone = inZone.substring(0,1) + "ST";;
+					}
+					TimeZone tz = TimeZone.getTimeZone(inZone);
+					c_TimeZoneForParse = tz.getDisplayName();
+					c_DateFormat.setTimeZone(tz);					
+					long metricTime= c_DateFormat.parse(dataFields[2]).getTime();
+					if (dst) // HACKALERT
+						metricTime -= 3600000L; // 				
+					if (metricTime > agedTS)
+						l.add(dataLine);	
+				} catch (ParseException e) {
+					setWarning("Unable to parse data DATE="+dataFields[2]+" e>"+e);
+				}
+				c_DataLines = l.toArray(new String[l.size()]);	
+			}
 		}
 		public Long getLatestTimestamp(){
 			long maxTime = Long.MIN_VALUE;
@@ -324,6 +354,7 @@ public class USGSWaterService  extends HTTPService_A{
 						metricTime -= 3600000L; // 				
 					if (metricTime > maxTime)
 						maxTime = metricTime;
+		
 				} catch (ParseException e) {
 					setWarning("Unable to parse data DATE="+dataFields[2]+" e>"+e);
 				}
@@ -435,7 +466,7 @@ public class USGSWaterService  extends HTTPService_A{
 		}
 	}
 
-	private static HashMap<String, USGS_Site> s_map_USGSSites = new HashMap<String, USGS_Site>();
+	private static ConcurrentHashMap<String, USGS_Site> s_map_USGSSites = new ConcurrentHashMap<String, USGS_Site>();
 	private class USGS_Site {
 		private String c_StationName;
 		private String c_SiteNo;
