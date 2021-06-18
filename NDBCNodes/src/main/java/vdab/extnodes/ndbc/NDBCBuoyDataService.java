@@ -14,11 +14,11 @@ import com.lcrc.af.AnalysisCompoundData;
 import com.lcrc.af.AnalysisDataDef;
 import com.lcrc.af.AnalysisEvent;
 
+import com.lcrc.af.constants.MeasurementUnit;
 import com.lcrc.af.util.ControlDataBuffer;
 import com.lcrc.af.util.IconUtility;
 
 import vdab.api.node.HTTPService_A;
-import vdab.core.nodes.units.MeasurementUnit;
 import vdab.core.nodes.units.UnitAdder;
 
 public class NDBCBuoyDataService  extends HTTPService_A{
@@ -99,6 +99,7 @@ public class NDBCBuoyDataService  extends HTTPService_A{
 	}
 	public void _reset(){
 		c_cdb_ProcessedTimes.clear();
+		c_LastEventTimestamp = 0L;
 		super._reset();
 	}
 	public String buildCompleteURL(AnalysisEvent ev) {
